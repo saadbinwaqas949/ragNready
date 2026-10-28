@@ -1,0 +1,1 @@
+Before doing any work, read ragnready_BRIEF.md. The brand name is ragNready. Follow the BRAND OVERRIDE section first. Never print or commit secret keys.
