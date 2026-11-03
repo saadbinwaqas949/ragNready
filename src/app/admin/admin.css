@@ -5,8 +5,10 @@
 .admin-brand span { color: #398bb8; }
 .admin-sidebar-label { margin: 10px 12px 8px; color: #8a96a4; font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
 .admin-nav { display: grid; gap: 4px; }
-.admin-nav a { border-radius: 10px; padding: 12px; color: #566577; font-size: 14px; }
-.admin-nav a:hover, .admin-nav a[aria-current="page"] { background: #eef5fa; color: #286c96; }
+.admin-nav a { position: relative; border-radius: 10px; padding: 12px; color: #566577; font-size: 14px; transition: background-color 160ms ease, color 160ms ease, font-weight 160ms ease; }
+.admin-nav a:hover { background: #f5f8fa; color: #286c96; }
+.admin-nav a[aria-current="page"] { background: #eef5fa; color: #286c96; font-weight: 650; }
+.admin-nav a[aria-current="page"]::before { position: absolute; top: 9px; bottom: 9px; left: 0; width: 3px; border-radius: 0 3px 3px 0; background: #69a7c7; content: ""; }
 .admin-sidebar-bottom { display: grid; gap: 12px; margin-top: auto; padding: 14px 12px 0; border-top: 1px solid #edf0f2; }
 .admin-user-email { overflow: hidden; color: #778494; font-size: 12px; text-overflow: ellipsis; }
 .admin-plain-button { border: 0; padding: 0; background: transparent; color: #496175; text-align: left; cursor: pointer; font-size: 13px; }
