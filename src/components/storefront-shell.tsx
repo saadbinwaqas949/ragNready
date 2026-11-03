@@ -107,8 +107,8 @@ export function StorefrontShell({ settings }: { settings: SiteSettings | null })
 }
 
 export function SiteFooter({ settings }: { settings: SiteSettings | null }) {
-  const email = settings?.email ?? "hello@example.com";
-  const phone = settings?.phone ?? "+92 300 0000000";
+  const email = settings?.email ?? SITE_CONTACT_FALLBACKS.email;
+  const phone = settings?.phone ?? SITE_CONTACT_FALLBACKS.phone;
   const address = settings?.address ?? "Lahore, Pakistan";
   const socialLinks = Object.entries(settings?.social_links ?? {}).filter(([, url]) => url);
   return <footer className="site-footer"><div className="footer-grid">

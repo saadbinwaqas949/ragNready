@@ -105,7 +105,5 @@ join public.collections c on c.handle=h.handle
 on conflict do nothing;
 
 insert into public.site_settings(setting_key,store_name,tagline,phone,whatsapp_number,email,address,social_links,legal_owner_line,is_published)
-values ('storefront','ragNready','Soft beginnings, thoughtfully chosen.','+92 300 0000000','+92 300 0000000','hello@example.com','Lahore, Pakistan','{}',null,true)
+values ('storefront','ragNready','Soft beginnings, thoughtfully chosen.','+92 308 4007461','+92 308 4007461','a.saadbinwaqas@gmail.com','Lahore, Pakistan','{}',null,true)
 on conflict(setting_key) do update set store_name=excluded.store_name,tagline=excluded.tagline,phone=excluded.phone,whatsapp_number=excluded.whatsapp_number,email=excluded.email,address=excluded.address,social_links=excluded.social_links,legal_owner_line=excluded.legal_owner_line,is_published=true;
-
--- Initial admin email is read from .env.local. This is an email address, not a key.

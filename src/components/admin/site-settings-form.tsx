@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import type { SiteSettings } from "@/lib/data/types";
 import { saveSiteSettingsAction } from "@/app/admin/actions";
+import { SITE_CONTACT_FALLBACKS } from "@/lib/site";
 
 const socialNames = ["Instagram", "Pinterest", "X", "LinkedIn", "Facebook"] as const;
 
@@ -34,9 +35,9 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings | null }
     <div className="admin-card"><div className="admin-form-grid">
       <label className="admin-field">Store name<input className="admin-input" name="store_name" defaultValue={settings?.store_name ?? "ragNready"} required /></label>
       <label className="admin-field">Tagline<input className="admin-input" name="tagline" defaultValue={settings?.tagline ?? ""} /></label>
-      <label className="admin-field">Phone<input className="admin-input" name="phone" defaultValue={settings?.phone ?? "+92 300 0000000"} /></label>
-      <label className="admin-field">WhatsApp number<input className="admin-input" name="whatsapp_number" defaultValue={settings?.whatsapp_number ?? "+92 300 0000000"} /></label>
-      <label className="admin-field">Email<input className="admin-input" name="email" type="email" defaultValue={settings?.email ?? "hello@example.com"} required /></label>
+      <label className="admin-field">Phone<input className="admin-input" name="phone" defaultValue={settings?.phone ?? SITE_CONTACT_FALLBACKS.phone} /></label>
+      <label className="admin-field">WhatsApp number<input className="admin-input" name="whatsapp_number" defaultValue={settings?.whatsapp_number ?? SITE_CONTACT_FALLBACKS.whatsapp_number} /></label>
+      <label className="admin-field">Email<input className="admin-input" name="email" type="email" defaultValue={settings?.email ?? SITE_CONTACT_FALLBACKS.email} required /></label>
       <label className="admin-field">Address<input className="admin-input" name="address" defaultValue={settings?.address ?? "Lahore, Pakistan"} /></label>
       <label className="admin-field admin-field-full">Optional legal-owner line<input className="admin-input" name="legal_owner_line" defaultValue={settings?.legal_owner_line ?? ""} /></label>
       <fieldset className="admin-field admin-field-full" style={{ border: 0, margin: 0, padding: 0 }}><legend style={{ marginBottom: 10 }}>Social links</legend><div className="admin-form-grid">{socialNames.map((social) => <label className="admin-field" key={social}>{social}<input className="admin-input" name={`social_${social}`} type="url" defaultValue={settings?.social_links?.[social.toLowerCase()] ?? ""} placeholder="https://" /></label>)}</div></fieldset>

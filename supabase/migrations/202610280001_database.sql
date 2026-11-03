@@ -101,9 +101,9 @@ create table if not exists public.site_settings (
   setting_key text not null unique default 'storefront' check (setting_key = 'storefront'),
   store_name text not null default 'ragNready',
   tagline text not null default 'Soft beginnings, thoughtfully chosen.',
-  phone text not null default '+92 300 0000000',
-  whatsapp_number text not null default '+92 300 0000000',
-  email text not null default 'hello@example.com',
+  phone text not null default '+92 308 4007461',
+  whatsapp_number text not null default '+92 308 4007461',
+  email text not null default 'a.saadbinwaqas@gmail.com',
   address text not null default 'Lahore, Pakistan',
   social_links jsonb not null default '{}'::jsonb,
   legal_owner_line text,
@@ -121,6 +121,9 @@ create table if not exists public.admins (
   email text primary key check (email = lower(email)),
   created_at timestamptz not null default now()
 );
+
+insert into public.admins(email) values ('a.saadbinwaqas@gmail.com')
+on conflict (email) do nothing;
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = '' as $$

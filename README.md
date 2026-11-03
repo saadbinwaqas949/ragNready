@@ -23,7 +23,7 @@ Available scripts:
 1. Create a Supabase project and keep its project URL, publishable (anon) key, and service-role key available privately.
 2. Open **SQL Editor** in Supabase, paste the complete contents of `supabase/schema.sql`, and run it once. It creates the tables, Row Level Security policies, image bucket, database functions, and placeholder collections and products. The separate files in `supabase/migrations/` are the same setup in migration order; use those with the Supabase CLI instead of also running the combined schema.
 3. Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `ADMIN_EMAIL`. The service-role key is server-only; never put it in a `NEXT_PUBLIC_` variable or commit it.
-4. In **Authentication → Users**, create the shop owner's email/password user. Add the same email to the `admins` table from SQL Editor:
+4. The schema allowlists `a.saadbinwaqas@gmail.com` in `public.admins`. Create a matching email/password user in **Authentication → Users** if one does not already exist. For a different owner, add that account's lowercase email to `public.admins` from SQL Editor:
 
    ```sql
    insert into public.admins (email)
