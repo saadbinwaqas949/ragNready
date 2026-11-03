@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CollectionPage } from "@/components/storefront/collection-page";
 import { getProducts } from "@/lib/data";
 import type { ProductFilters } from "@/lib/data";
+import { SIMPLE_MODE } from "@/lib/site-config";
 
 export const metadata: Metadata = { title: "Shop all baby essentials", alternates: { canonical: "/collections/all" } };
 export const revalidate = 3600;
@@ -23,6 +24,6 @@ export default async function AllCollectionPage({ searchParams }: { searchParams
     ...(validSorts.includes(raw.sort as typeof validSorts[number]) ? { sort: raw.sort as ProductFilters["sort"] } : {}),
     minPrice: price(raw.minPrice), maxPrice: price(raw.maxPrice),
   };
-  const products = await getProducts(filters);
+  const products = await getProducts(SIMPLE_MODE ? {} : filters);
   return <CollectionPage basePath="/collections/all" products={products} values={raw} />;
 }

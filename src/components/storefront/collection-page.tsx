@@ -3,9 +3,11 @@ import Link from "next/link";
 import type { Collection, Product } from "@/lib/data/types";
 import { CollectionControls } from "./collection-controls";
 import { ProductGrid } from "./product-grid";
+import { SIMPLE_MODE } from "@/lib/site-config";
 
 export function CollectionPage({ collection, products, values, basePath }: { collection?: Collection; products: Product[]; values: Record<string, string | undefined>; basePath: string }) {
   const image = collection?.image;
+  if (SIMPLE_MODE) return <main className="collection-page"><ProductGrid products={products} /></main>;
   return <main className="collection-page">
     <nav className="breadcrumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span><Link href="/collections/all">Shop</Link>{collection && <><span>/</span><span aria-current="page">{collection.title}</span></>}</nav>
     {collection && <section className="collection-hero"><div><p className="eyebrow">thoughtfully chosen</p><h1>{collection.title}</h1><p>{collection.description}</p></div>{image && <div className="collection-hero-image"><Image src={image} alt="" fill sizes="40vw" /></div>}</section>}

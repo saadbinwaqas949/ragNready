@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { CollectionPage } from "@/components/storefront/collection-page";
 import { getCollectionByHandle, getProducts } from "@/lib/data";
 import type { ProductFilters } from "@/lib/data";
+import { SIMPLE_MODE } from "@/lib/site-config";
 
 export const revalidate = 3600;
 type Props = { params: Promise<{ handle: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -33,6 +34,6 @@ export default async function CollectionHandlePage({ params, searchParams }: Pro
   const collection = await getCollectionByHandle(handle);
   if (!collection) notFound();
   const raw = Object.fromEntries(Object.entries(search).map(([key, value]) => [key, val(value)])) as Record<string, string | undefined>;
-  const products = await getProducts({ ...readFilters(search), collectionHandle: handle });
+  const products = await getProducts({ ...(SIMPLE_MODE ? {} : readFilters(search)), collectionHandle: handle });
   return <CollectionPage collection={collection} basePath={`/collections/${handle}`} products={products} values={raw} />;
 }
