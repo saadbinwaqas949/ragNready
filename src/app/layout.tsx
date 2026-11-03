@@ -5,7 +5,7 @@ import { jsonLd } from "@/lib/seo/json-ld";
 import "./globals.css";
 
 const bodyFont = DM_Sans({ subsets: ["latin"], variable: "--font-body", display: "swap" });
-const displayFont = Nunito({ subsets: ["latin"], variable: "--font-display", display: "swap", weight: ["400", "600", "700", "800"] });
+const displayFont = Nunito({ subsets: ["latin"], variable: "--font-display", display: "swap", weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_ORIGIN),

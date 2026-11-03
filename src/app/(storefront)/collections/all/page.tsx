@@ -14,6 +14,11 @@ function one(value: string | string[] | undefined) { return typeof value === "st
 function price(value: string | undefined) { const parsed = Number(value); return value && Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined; }
 
 export default async function AllCollectionPage({ searchParams }: { searchParams: Promise<Search> }) {
+  if (SIMPLE_MODE) {
+    const products = await getProducts();
+    return <CollectionPage basePath="/collections/all" products={products} values={{}} />;
+  }
+
   const params = await searchParams;
   const raw = { size: one(params.size), gender: one(params.gender), season: one(params.season), minPrice: one(params.minPrice), maxPrice: one(params.maxPrice), availability: one(params.availability), sort: one(params.sort), view: one(params.view) };
   const filters: ProductFilters = {
@@ -24,6 +29,6 @@ export default async function AllCollectionPage({ searchParams }: { searchParams
     ...(validSorts.includes(raw.sort as typeof validSorts[number]) ? { sort: raw.sort as ProductFilters["sort"] } : {}),
     minPrice: price(raw.minPrice), maxPrice: price(raw.maxPrice),
   };
-  const products = await getProducts(SIMPLE_MODE ? {} : filters);
+  const products = await getProducts(filters);
   return <CollectionPage basePath="/collections/all" products={products} values={raw} />;
 }

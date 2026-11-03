@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
@@ -78,7 +79,7 @@ const readProducts = unstable_cache(async (filters: ProductFilters): Promise<Pro
   const selectedIds = idFilters.length ? idFilters[0].filter((id) => idFilters.every((ids) => ids.includes(id))) : undefined;
   if (selectedIds?.length === 0) return [];
 
-  let query = supabase.from("products").select("*").eq("status", "published");
+  let query = supabase.from("products").select("id,title,handle,description,price,compare_at_price,gender,season,status,is_sold_out,badges,sort_order,fabric_care,created_at,updated_at").eq("status", "published");
   if (filters.gender) query = query.eq("gender", filters.gender);
   if (filters.season) query = query.eq("season", filters.season);
   if (filters.availability === "in-stock") query = query.eq("is_sold_out", false);
@@ -107,55 +108,55 @@ export async function getProducts(options: ProductFilters = {}): Promise<Product
 
 const readProductByHandle = unstable_cache(async (handle: string): Promise<Product | null> => {
   const supabase = createSupabasePublicClient();
-  const result = await supabase.from("products").select("*").eq("handle", handle).eq("status", "published").maybeSingle();
+  const result = await supabase.from("products").select("id,title,handle,description,price,compare_at_price,gender,season,status,is_sold_out,badges,sort_order,fabric_care,created_at,updated_at").eq("handle", handle).eq("status", "published").maybeSingle();
   if (result.error) throw result.error;
   if (!result.data) return null;
   const [product] = await attachDetails([result.data as ProductRecord]);
   return product ?? null;
 }, ["ragnready-product"], { revalidate: 3600, tags: ["products"] });
 
-export async function getProductByHandle(handle: string): Promise<Product | null> {
+export const getProductByHandle = cache(async (handle: string): Promise<Product | null> => {
   try { return await readProductByHandle(handle); }
   catch (error) { if (schemaNotInstalled(error)) return null; throw error; }
-}
+});
 
 const readCollections = unstable_cache(async (): Promise<Collection[]> => {
   const supabase = createSupabasePublicClient();
-  const result = await supabase.from("collections").select("*").order("sort_order").order("title");
+  const result = await supabase.from("collections").select("id,title,handle,description,image,sort_order,created_at,updated_at").order("sort_order").order("title");
   if (result.error) throw result.error;
   return (result.data ?? []) as Collection[];
 }, ["ragnready-collections"], { revalidate: 3600, tags: ["collections"] });
 
-export async function getCollections(): Promise<Collection[]> {
+export const getCollections = cache(async (): Promise<Collection[]> => {
   try { return await readCollections(); }
   catch (error) { if (schemaNotInstalled(error)) return []; throw error; }
-}
+});
 
 const readCollectionByHandle = unstable_cache(async (handle: string): Promise<Collection | null> => {
   const supabase = createSupabasePublicClient();
-  const result = await supabase.from("collections").select("*").eq("handle", handle).maybeSingle();
+  const result = await supabase.from("collections").select("id,title,handle,description,image,sort_order,created_at,updated_at").eq("handle", handle).maybeSingle();
   if (result.error) throw result.error;
   return (result.data as Collection | null) ?? null;
 }, ["ragnready-collection"], { revalidate: 3600, tags: ["collections"] });
 
-export async function getCollectionByHandle(handle: string): Promise<Collection | null> {
+export const getCollectionByHandle = cache(async (handle: string): Promise<Collection | null> => {
   try { return await readCollectionByHandle(handle); }
   catch (error) { if (schemaNotInstalled(error)) return null; throw error; }
-}
+});
 
 const readSiteSettings = unstable_cache(async (): Promise<SiteSettings | null> => {
   const supabase = createSupabasePublicClient();
-  const result = await supabase.from("site_settings").select("*").eq("setting_key", "storefront").maybeSingle();
+  const result = await supabase.from("site_settings").select("id,store_name,tagline,phone,whatsapp_number,email,address,social_links,legal_owner_line,announcement_messages,hero_headline,hero_subtext,hero_cta_text,popup_discount_code,is_published,updated_at").eq("setting_key", "storefront").maybeSingle();
   if (result.error) throw result.error;
   return (result.data as SiteSettings | null) ?? null;
 }, ["ragnready-site-settings"], { revalidate: 3600, tags: ["site-settings"] });
 
-export async function getSiteSettings(): Promise<SiteSettings | null> {
+export const getSiteSettings = cache(async (): Promise<SiteSettings | null> => {
   try { return await readSiteSettings(); }
   catch (error) { if (schemaNotInstalled(error)) return null; throw error; }
-}
+});
 
-function revalidateStorefront() {
+export function revalidateStorefront() {
   revalidatePath("/", "layout");
   revalidateTag("products");
   revalidateTag("collections");

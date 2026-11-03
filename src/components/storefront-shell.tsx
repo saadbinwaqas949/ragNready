@@ -1,17 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import type { SiteSettings } from "@/lib/data/types";
 import { useShopStore } from "@/lib/storefront/store";
-import { CartDrawer } from "@/components/storefront/cart-drawer";
-import { SearchOverlay } from "@/components/storefront/search-overlay";
-import { CustomCursor } from "@/components/storefront/custom-cursor";
 import { NewsletterForm } from "@/components/storefront/newsletter-form";
 import { SITE_CONTACT_FALLBACKS } from "@/lib/site";
 import { SIMPLE_MODE } from "@/lib/site-config";
+
+const CartDrawer = dynamic(() => import("@/components/storefront/cart-drawer").then((module) => module.CartDrawer), { ssr: false, loading: () => null });
+const SearchOverlay = dynamic(() => import("@/components/storefront/search-overlay").then((module) => module.SearchOverlay), { ssr: false, loading: () => null });
+const CustomCursor = dynamic(() => import("@/components/storefront/custom-cursor").then((module) => module.CustomCursor), { ssr: false, loading: () => null });
 
 function Icon({ name }: { name: "search" | "user" | "heart" | "bag" | "menu" | "close" }) {
   const paths: Record<typeof name, React.ReactNode> = {
@@ -39,6 +41,7 @@ function AnnouncementBar({ messages }: { messages: string[] }) {
 
 export function StorefrontShell({ settings }: { settings: SiteSettings | null }) {
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartRequested, setCartRequested] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -47,6 +50,7 @@ export function StorefrontShell({ settings }: { settings: SiteSettings | null })
   const cartCount = useShopStore((state) => state.cart.reduce((sum, item) => sum + item.quantity, 0));
   const wishlistCount = useShopStore((state) => state.wishlist.length);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
+  const openCart = useCallback(() => { setCartRequested(true); setCartOpen(true); }, []);
   const closeCart = useCallback(() => setCartOpen(false), []);
   const messages = settings?.announcement_messages?.length ? settings.announcement_messages : ["Soft beginnings, thoughtfully chosen.", "A thoughtfully designed ragNready card is included with selected gift orders.", "New starter set now available."];
 
@@ -87,14 +91,14 @@ export function StorefrontShell({ settings }: { settings: SiteSettings | null })
         <Link href="/" aria-label="ragNready home"><BrandWordmark /></Link>
         <div className="header-actions">
           {!SIMPLE_MODE && <><button className="icon-button" aria-label="Search" onClick={() => setSearchOpen(true)}><Icon name="search" /></button><Link className="icon-button account-action" href="/admin" aria-label="Shop admin"><Icon name="user" /></Link><Link className="icon-button wishlist-action" href="/pages/wishlist" aria-label={`Wishlist, ${wishlistCount} saved items`}><Icon name="heart" />{wishlistCount > 0 && <span className="cart-count wishlist-count">{wishlistCount}</span>}</Link></>}
-          <button className="icon-button" id="cart-trigger" aria-label={`Open cart, ${cartCount} items`} onClick={() => setCartOpen(true)}><Icon name="bag" /><AnimatePresence mode="popLayout"><motion.span className="cart-count" key={cartCount} initial={{ scale: 0.65 }} animate={{ scale: [1.22, 1] }} exit={{ scale: 0.65 }} transition={{ duration: 0.28 }}>{cartCount}</motion.span></AnimatePresence></button>
+          <button className="icon-button" id="cart-trigger" aria-label={`Open cart, ${cartCount} items`} onClick={openCart}><Icon name="bag" /><AnimatePresence mode="popLayout"><motion.span className="cart-count" key={cartCount} initial={{ scale: 0.65 }} animate={{ scale: [1.22, 1] }} exit={{ scale: 0.65 }} transition={{ duration: 0.28 }}>{cartCount}</motion.span></AnimatePresence></button>
         </div>
       </div>
       <AnimatePresence>{menuOpen && <motion.nav id="mobile-navigation" className="mobile-nav" aria-label="Mobile navigation" initial={{ height: 0, opacity: 0 }} animate={{ height: "calc(100svh - 104px)", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
         {(SIMPLE_MODE ? [["Home", "/"], ["Shop", "/collections/all"], ["About", "/pages/about-us"], ["Contact", "/pages/contact"]] : [["Shop all", "/collections/all"], ["Baby Body Suits", "/collections/body-suits"], ["Little Occasion Wear", "/collections/frocks"], ["Gift sets", "/collections/gift-set"], ["About ragNready", "/pages/about-us"], ["Contact", "/pages/contact"]]).map(([label, href], index) => <motion.div key={href} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.045 }}><Link href={href} onClick={() => setMenuOpen(false)}>{label}</Link></motion.div>)}
       </motion.nav>}</AnimatePresence>
     </header>
-    <CartDrawer open={cartOpen} onClose={closeCart} />
+    {cartRequested && <CartDrawer open={cartOpen} onClose={closeCart} />}
     {!SIMPLE_MODE && <SearchOverlay open={searchOpen} onClose={closeSearch} />}
     <a className="whatsapp" href={whatsappHref} aria-label="Chat with ragNready on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.7 7.4L3 20l1-4.5a8.5 8.5 0 1 1 16.5-3.8Z" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M8.1 8.1c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .5.4l.7 1.6c.1.3.1.4-.1.6l-.5.6c-.2.2-.2.3 0 .6.4.7 1.1 1.3 1.8 1.7.3.2.5.2.7-.1l.7-.8c.2-.2.4-.2.6-.1l1.5.7c.3.1.4.3.3.6-.1.5-.4 1.1-.8 1.3-.5.4-1.1.5-1.8.3-.6-.2-1.3-.4-2.3-1.1-1.3-.9-2.2-2-2.7-2.8-.5-.9-.8-1.9-.3-2.8.2-.4.5-.7.8-.8Z" fill="currentColor"/></svg></a>
     {showTop && <button className="back-to-top" aria-label="Back to top" onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}>↑</button>}

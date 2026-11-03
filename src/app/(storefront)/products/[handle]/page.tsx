@@ -13,6 +13,11 @@ import { SITE_ORIGIN } from "@/lib/site";
 
 export const revalidate = 3600;
 
+export async function generateStaticParams() {
+  const products = await getProducts();
+  return products.map((product) => ({ handle: product.handle }));
+}
+
 type PageProps = { params: Promise<{ handle: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

@@ -14,6 +14,11 @@ const pages: Record<string, { title: string; intro: string }> = {
   "terms-and-conditions": { title: "Terms & Conditions", intro: "These simple terms help make shopping with ragNready clear and comfortable." },
 };
 
+export const revalidate = 3600;
+export function generateStaticParams() {
+  return Object.keys(pages).map((handle) => ({ handle }));
+}
+
 const faqs = [
   ["What ages do you offer?", "Our selected sizes cover newborn to 12–18 months, depending on the piece. Please check each product's available sizes."],
   ["Where do you deliver?", "We offer nationwide delivery across Pakistan."],

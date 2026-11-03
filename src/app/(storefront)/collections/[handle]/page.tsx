@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CollectionPage } from "@/components/storefront/collection-page";
-import { getCollectionByHandle, getProducts } from "@/lib/data";
+import { getCollectionByHandle, getCollections, getProducts } from "@/lib/data";
 import type { ProductFilters } from "@/lib/data";
 import { SIMPLE_MODE } from "@/lib/site-config";
 
 export const revalidate = 3600;
+export async function generateStaticParams() {
+  const collections = await getCollections();
+  return collections.map((collection) => ({ handle: collection.handle }));
+}
+
 type Props = { params: Promise<{ handle: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 const validSizes = ["0-3 Months", "3-6 Months", "6-9 Months", "9-12 Months", "12-18 Months"];
 const validSorts = ["featured", "newest", "price-ascending", "price-descending", "title-ascending"] as const;
@@ -30,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CollectionHandlePage({ params, searchParams }: Props) {
-  const [{ handle }, search] = await Promise.all([params, searchParams]);
+  const [{ handle }, search] = await Promise.all([params, SIMPLE_MODE ? Promise.resolve({} as Record<string, string | string[] | undefined>) : searchParams]);
   const collection = await getCollectionByHandle(handle);
   if (!collection) notFound();
   const raw = Object.fromEntries(Object.entries(search).map(([key, value]) => [key, val(value)])) as Record<string, string | undefined>;

@@ -1,10 +1,12 @@
+import dynamic from "next/dynamic";
 import { StorefrontShell, SiteFooter } from "@/components/storefront-shell";
 import { getSiteSettings } from "@/lib/data";
 import { MotionRuntime } from "@/components/storefront/motion-runtime";
 import { MotionConfig } from "framer-motion";
-import { NewsletterPopup } from "@/components/storefront/newsletter-popup";
 import { BrandedPreloader } from "@/components/storefront/branded-preloader";
 import { SIMPLE_MODE } from "@/lib/site-config";
+
+const NewsletterPopup = dynamic(() => import("@/components/storefront/newsletter-popup").then((module) => module.NewsletterPopup));
 
 export default async function StorefrontLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const settings = await getSiteSettings();

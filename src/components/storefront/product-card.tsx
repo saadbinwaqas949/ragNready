@@ -36,8 +36,8 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
   return <motion.article className={`product-card${soldOut ? " product-card-sold-out" : ""}`} initial={reduced ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.12 }} transition={{ duration: reduced ? 0 : 0.45, delay: Math.min(index % 4, 3) * 0.055 }} whileHover={reduced ? undefined : { y: -4, rotateX: 1, rotateY: -1 }}>
     <div className="product-card-image-wrap" data-cursor-label="view">
       <Link href={`/products/${product.handle}`} className="product-card-image-link" aria-label={`View ${product.title}`}>
-        <Image className="product-card-image" src={firstImage} alt={product.images[0]?.alt || product.title} fill sizes="(max-width: 600px) 48vw, (max-width: 1024px) 32vw, 24vw" />
-        <Image className="product-card-image product-card-image-hover" src={secondImage} alt={product.images[1]?.alt || product.title} fill sizes="(max-width: 600px) 48vw, (max-width: 1024px) 32vw, 24vw" />
+        <Image className="product-card-image" src={firstImage} alt={product.images[0]?.alt || product.title} fill quality={75} sizes="(max-width: 600px) 48vw, (max-width: 1024px) 32vw, 24vw" />
+        <Image className="product-card-image product-card-image-hover" src={secondImage} alt={product.images[1]?.alt || product.title} fill quality={75} sizes="(max-width: 600px) 48vw, (max-width: 1024px) 32vw, 24vw" />
       </Link>
       {(product.compare_at_price && product.compare_at_price > product.price) && <span className="product-badge product-badge-sale">Sale</span>}
       {soldOut && <span className="product-badge product-badge-sold">Sold out</span>}

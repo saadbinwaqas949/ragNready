@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
-import { deleteCollection, deleteProduct, saveCollection, saveProduct, saveSiteSettings } from "@/lib/data";
+import { deleteCollection, deleteProduct, revalidateStorefront, saveCollection, saveProduct, saveSiteSettings } from "@/lib/data";
 
 export type ActionResult = { success: boolean; message: string; id?: string; handle?: string };
 
@@ -44,6 +44,7 @@ export async function setProductStatusAction(id: string, status: "draft" | "publ
   if (!z.string().uuid().safeParse(id).success || !z.enum(["draft", "published"]).safeParse(status).success) return { success: false, message: "Invalid product update." };
   const { error } = await supabase.from("products").update({ status }).eq("id", id);
   if (error) return { success: false, message: "Could not update publish status." };
+  revalidateStorefront();
   return { success: true, message: "Publish status updated." };
 }
 
@@ -52,6 +53,7 @@ export async function setSoldOutAction(id: string, isSoldOut: boolean): Promise<
   if (!z.string().uuid().safeParse(id).success || !z.boolean().safeParse(isSoldOut).success) return { success: false, message: "Invalid stock update." };
   const { error } = await supabase.from("products").update({ is_sold_out: isSoldOut }).eq("id", id);
   if (error) return { success: false, message: "Could not update sold-out status." };
+  revalidateStorefront();
   return { success: true, message: "Stock status updated." };
 }
 
