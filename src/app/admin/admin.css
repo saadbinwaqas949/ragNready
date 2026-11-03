@@ -70,6 +70,11 @@
 .admin-login-card h1 { margin: 0; font-family: Georgia, serif; font-size: 29px; font-weight: 500; }
 .admin-login-card > p { margin: 9px 0 25px; color: #778494; font-size: 14px; }
 .admin-login-form { display: grid; gap: 15px; }
+.password-input-wrap { position: relative; display: block; }
+.password-input-field { padding-right: 44px; }
+.password-input-toggle { position: absolute; top: 50%; right: 8px; display: grid; width: 30px; height: 30px; place-items: center; transform: translateY(-50%); border: 0; border-radius: 6px; padding: 0; background: transparent; color: #718092; cursor: pointer; }
+.password-input-toggle:hover { background: #f1f5f7; color: #314960; }
+.password-input-toggle:focus-visible { outline: 2px solid #347fa5; outline-offset: 1px; }
 @media (max-width: 840px) {
   .admin-layout { grid-template-columns: 1fr; }
   .admin-sidebar { position: sticky; z-index: 10; top: 0; height: auto; padding: 12px 16px; }

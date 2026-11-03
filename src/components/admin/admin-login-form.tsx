@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { PasswordInput } from "./password-input";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export function AdminLoginForm() {
   return <form className="admin-login-form" onSubmit={submit}>
     {error && <p className="admin-notice admin-notice-error" role="alert">{error}</p>}
     <label className="admin-field">Email<input className="admin-input" autoComplete="username" type="email" name="email" required /></label>
-    <label className="admin-field">Password<input className="admin-input" autoComplete="current-password" type="password" name="password" required /></label>
+    <label className="admin-field">Password<PasswordInput autoComplete="current-password" name="password" required /></label>
     <button className="admin-button admin-button-primary" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
   </form>;
 }
