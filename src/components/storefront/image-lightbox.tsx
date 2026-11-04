@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent } from "react";
 import type { ProductImageInput } from "@/lib/data/types";
 
 type Props = { title: string; images: ProductImageInput[]; initialIndex: number; onClose: () => void; opener: HTMLElement | null };
@@ -24,6 +24,7 @@ export function ImageLightbox({ title, images, initialIndex, onClose, opener }: 
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
+    if (!mounted) return;
     const priorOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const first = dialogRef.current?.querySelector<HTMLElement>(focusable);
@@ -42,7 +43,7 @@ export function ImageLightbox({ title, images, initialIndex, onClose, opener }: 
     };
     document.addEventListener("keydown", onKey);
     return () => { document.body.style.overflow = priorOverflow; document.removeEventListener("keydown", onKey); opener?.focus(); };
-  }, [close, move, opener]);
+  }, [close, mounted, move, opener]);
   useEffect(() => {
     if (!image) return;
     const preload = new window.Image();
@@ -54,12 +55,24 @@ export function ImageLightbox({ title, images, initialIndex, onClose, opener }: 
     const rect = event.currentTarget.getBoundingClientRect();
     setOrigin(`${((event.clientX - rect.left) / rect.width) * 100}% ${((event.clientY - rect.top) / rect.height) * 100}%`);
   };
+  const pictureClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const element = event.currentTarget.querySelector("img");
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const width = element?.naturalWidth || bounds.width, height = element?.naturalHeight || bounds.height;
+    const scale = Math.min(bounds.width / width, bounds.height / height);
+    const renderedWidth = width * scale, renderedHeight = height * scale;
+    const left = bounds.left + (bounds.width - renderedWidth) / 2, top = bounds.top + (bounds.height - renderedHeight) / 2;
+    const onImage = event.clientX >= left && event.clientX <= left + renderedWidth && event.clientY >= top && event.clientY <= top + renderedHeight;
+    if (!onImage) { close(); return; }
+    if (window.matchMedia("(hover: none)").matches && !dragged.current) setZoom((value) => !value);
+    dragged.current = false;
+  };
 
   return createPortal(<div className={`lightbox-backdrop${closing ? " is-closing" : ""}`} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
     <div className="lightbox-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-label={`${title} photos`} tabIndex={-1}>
       <button className="lightbox-close" type="button" aria-label="Close image viewer" onClick={close}>&times;</button>
       {images.length > 1 && <button className="lightbox-arrow lightbox-prev" type="button" aria-label="Previous image" onClick={() => move(-1)}>&lsaquo;</button>}
-      <div className={`lightbox-picture${zoom ? " is-touch-zoomed" : ""}`} style={{ "--lightbox-origin": origin, "--lightbox-pan-x": `${pan.x}px`, "--lightbox-pan-y": `${pan.y}px` } as CSSProperties} onPointerMove={point} onClick={() => { if (window.matchMedia("(hover: none)").matches && !dragged.current) setZoom((value) => !value); dragged.current = false; }} onPointerDown={(event) => { if (zoom && event.pointerType === "touch") { setDragStart({ x: event.clientX - pan.x, y: event.clientY - pan.y }); dragged.current = false; } }} onPointerUp={() => setDragStart(null)} onPointerLeave={() => setDragStart(null)} onPointerMoveCapture={(event) => { if (dragStart) { if (Math.abs(event.movementX) + Math.abs(event.movementY) > 1) dragged.current = true; setPan({ x: event.clientX - dragStart.x, y: event.clientY - dragStart.y }); } }}>
+      <div className={`lightbox-picture${zoom ? " is-touch-zoomed" : ""}`} style={{ "--lightbox-origin": origin, "--lightbox-pan-x": `${pan.x}px`, "--lightbox-pan-y": `${pan.y}px` } as CSSProperties} onPointerMove={point} onClick={pictureClick} onPointerDown={(event) => { if (zoom && event.pointerType === "touch") { event.currentTarget.setPointerCapture(event.pointerId); setDragStart({ x: event.clientX - pan.x, y: event.clientY - pan.y }); dragged.current = false; } }} onPointerUp={() => setDragStart(null)} onPointerLeave={() => setDragStart(null)} onPointerMoveCapture={(event) => { if (dragStart) { if (Math.abs(event.clientX - dragStart.x - pan.x) + Math.abs(event.clientY - dragStart.y - pan.y) > 1) dragged.current = true; setPan({ x: event.clientX - dragStart.x, y: event.clientY - dragStart.y }); } }}>
         <Image key={image.url} className="lightbox-image" src={image.url} alt={image.alt || title} fill quality={85} sizes="92vw" priority />
       </div>
       {images.length > 1 && <button className="lightbox-arrow lightbox-next" type="button" aria-label="Next image" onClick={() => move(1)}>&rsaquo;</button>}

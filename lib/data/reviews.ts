@@ -6,6 +6,7 @@ import { createSupabasePublicClient } from "@/lib/supabase/public";
 
 export type PublicReview = { id: string; rating: number; comment: string; reviewer_name: string; created_at: string; review_images: { url: string; position: number }[] };
 export type RecentApprovedReview = PublicReview & { product_title: string; product_handle: string };
+export type AdminReview = { id: string; product_id: string; order_id: string; rating: number; comment: string; reviewer_name: string; status: "pending" | "approved" | "rejected"; created_at: string; order_number: string | null; product_title: string | null; review_images: { url: string; position: number }[] };
 
 const readProductReviews = unstable_cache(async (productId: string): Promise<PublicReview[]> => {
   const supabase = createSupabasePublicClient();
@@ -31,7 +32,8 @@ export async function getAdminReviews() {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase.from("reviews").select("id,product_id,order_id,rating,comment,reviewer_name,status,created_at,orders(order_number),products(title),review_images(url,position)").order("created_at", { ascending: false });
   if (error) throw new Error("Could not load customer reviews.");
-  return data ?? [];
+  const rows = (data ?? []) as unknown as (Omit<AdminReview, "order_number" | "product_title"> & { orders: { order_number: string }[] | null; products: { title: string }[] | null })[];
+  return rows.map(({ orders, products, ...review }) => ({ ...review, order_number: orders?.[0]?.order_number ?? null, product_title: products?.[0]?.title ?? null }));
 }
 
 export async function getPendingReviewCount() {

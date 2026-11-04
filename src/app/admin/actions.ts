@@ -1,10 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
 import { deleteCollection, deleteProduct, revalidateStorefront, saveCollection, saveProduct, saveSiteSettings } from "@/lib/data";
 import { sendOrderNotification } from "@/lib/server/order-notifications";
+import { SHOW_REVIEWS } from "@/lib/site-config";
 
 export type ActionResult = { success: boolean; message: string; id?: string; handle?: string };
 
@@ -101,6 +102,7 @@ export async function sendTestOrderEmailAction(): Promise<ActionResult> {
 }
 
 export async function moderateReviewAction(id: string, status: "approved" | "rejected" | "deleted"): Promise<ActionResult> {
+  if (!SHOW_REVIEWS) return { success: false, message: "Reviews are currently turned off." };
   const { supabase } = await requireAdmin();
   if (!z.string().uuid().safeParse(id).success || !["approved", "rejected", "deleted"].includes(status)) return { success: false, message: "Invalid review update." };
   if (status === "deleted") {
@@ -114,6 +116,10 @@ export async function moderateReviewAction(id: string, status: "approved" | "rej
   return { success: true, message: status === "deleted" ? "Review deleted." : `Review ${status}.` };
 }
 
+export async function moderateReviewFormAction(id: string, status: "approved" | "rejected" | "deleted"): Promise<void> {
+  await moderateReviewAction(id, status);
+}
+
 export async function setOrderStatusAction(id: string, status: string): Promise<ActionResult> {
   const { supabase } = await requireAdmin();
   const idResult = z.string().uuid().safeParse(id);
@@ -121,6 +127,7 @@ export async function setOrderStatusAction(id: string, status: string): Promise<
   if (!idResult.success || !statusResult.success) return { success: false, message: "Invalid order status." };
   const { error } = await supabase.from("orders").update({ status: statusResult.data }).eq("id", idResult.data);
   if (error) return { success: false, message: "Could not update the order." };
+  revalidatePath("/admin"); revalidatePath("/admin/orders");
   return { success: true, message: "Order status updated." };
 }
 

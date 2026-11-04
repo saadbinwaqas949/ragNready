@@ -21,6 +21,7 @@
   --font-body: Arial, Helvetica, sans-serif;
   --font-display: Georgia, "Times New Roman", serif;
 }
+.review-rating-picker { display: flex; gap: 4px; border: 0; margin: 0; padding: 0; color: #be9145; }.review-rating-picker legend { margin-bottom: 4px; color: #42566a; font-size: 13px; font-weight: 650; }.review-rating-picker button { border: 0; padding: 3px; background: transparent; color: inherit; cursor: pointer; }
 
 html, body { overflow-x: clip; }
 
@@ -278,7 +279,7 @@ button { color: inherit; font: inherit; }
   .contact-layout, .info-story { grid-template-columns: 1fr; }.full-cart-layout { grid-template-columns: 1fr; }.full-cart-summary { position: static; }.skeleton-grid { grid-template-columns: repeat(2,1fr); }.collection-hero { grid-template-columns: 1fr; }.collection-hero-image { min-height: 190px; }
 }
 @media (max-width: 600px) {
-  .product-grid { gap: 12px; }.product-card { border-radius: 16px; }.product-card-image-wrap { border-radius: 16px; }.product-card-copy { padding: 12px 10px 13px; }.product-card-title { font-size: 14px; }.product-price { font-size: 12px; }.quick-add { min-height: 36px; font-size: 10px; }.product-heart { width: 32px; height: 32px; }
+  .product-grid { gap: 16px; }.product-card { border-radius: 16px; }.product-card-image-wrap { border-radius: 16px; }.product-card-copy { padding: 12px 10px 13px; }.product-card-title { font-size: 14px; }.product-price { font-size: 12px; }.quick-add { min-height: 36px; font-size: 10px; }.product-heart { width: 32px; height: 32px; }
   .product-grid-list .product-card { grid-template-columns: 120px minmax(0, 1fr); }.product-grid-list .product-card-copy { padding: 11px; }.product-grid-list .product-card-title { font-size: 15px; }
   .collection-title { padding: 24px 18px 30px; }.collection-results-bar { padding: 0 2px; }.collection-hero { margin: 0 15px 25px; }.breadcrumbs { padding: 17px 18px; }.product-detail-layout { padding: 0 17px; }.product-purchase-buttons { grid-template-columns: 1fr; }.full-cart-line { grid-template-columns: 76px minmax(0,1fr); }.full-cart-line img { width: 76px; height: 94px; }.full-cart-line > strong { grid-column: 2; }
   .info-story-image { min-height: 250px; }.contact-layout { gap: 24px; }.size-guide-dialog { padding: 26px 18px; }.custom-cursor { display: none; }
