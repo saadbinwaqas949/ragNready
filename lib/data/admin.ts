@@ -48,6 +48,13 @@ export async function getAdminOrders() {
   return data ?? [];
 }
 
+export async function getAdminNewOrdersCount() {
+  const { supabase } = await requireAdmin();
+  const { count, error } = await supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "new");
+  if (error) throw new Error("Could not load the new order count.");
+  return count ?? 0;
+}
+
 export async function getAdminOrder(id: string) {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase.from("orders").select("*, order_items(*)").eq("id", id).maybeSingle();

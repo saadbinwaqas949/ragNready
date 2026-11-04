@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { allowRequest, requestAddress } from "@/lib/server/rate-limit";
+import { sendOrderNotification, type NotificationOrder } from "@/lib/server/order-notifications";
 
 const orderSchema = z.object({
   customer: z.object({
@@ -26,6 +27,13 @@ export async function POST(request: Request) {
     if (error) {
       if (["P0001", "22023"].includes(error.code ?? "")) return NextResponse.json({ message: "A selected item is unavailable or its stock changed. Please review your cart." }, { status: 409 });
       throw error;
+    }
+    try {
+      const { data: savedOrder, error: fetchError } = await createSupabaseAdminClient().from("orders").select("*, order_items(title,size,quantity,unit_price,line_total)").eq("id", data.id).single();
+      if (fetchError || !savedOrder) throw fetchError ?? new Error("Saved order could not be loaded for notification.");
+      await sendOrderNotification(savedOrder as unknown as NotificationOrder);
+    } catch (notificationError) {
+      console.error("Order notification failed after order was saved:", notificationError instanceof Error ? notificationError.message : "Unknown email error");
     }
     revalidateTag("products");
     return NextResponse.json({ order: data }, { status: 201 });

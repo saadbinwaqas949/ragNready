@@ -9,6 +9,8 @@
 .admin-nav a:hover { background: #f5f8fa; color: #286c96; }
 .admin-nav a[aria-current="page"] { background: #eef5fa; color: #286c96; font-weight: 650; }
 .admin-nav a[aria-current="page"]::before { position: absolute; top: 9px; bottom: 9px; left: 0; width: 3px; border-radius: 0 3px 3px 0; background: #69a7c7; content: ""; }
+.admin-nav-count { display: inline-grid; min-width: 20px; height: 20px; place-items: center; margin-left: 9px; border-radius: 999px; padding: 0 5px; background: #e7a49a; color: #fff; font-size: 11px; font-weight: 700; }
+.admin-order-new { background: #fff9e9; }.admin-badge-new { margin-left: 8px; background: #fff0c6; color: #80611a; }.admin-dashboard-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; max-width: 600px; }.admin-dashboard-card > div { display: grid; gap: 6px; color: #697b8e; }.admin-dashboard-card strong { color: #263d53; font-size: 30px; }
 .admin-sidebar-bottom { display: grid; gap: 12px; margin-top: auto; padding: 14px 12px 0; border-top: 1px solid #edf0f2; }
 .admin-user-email { overflow: hidden; color: #778494; font-size: 12px; text-overflow: ellipsis; }
 .admin-plain-button { border: 0; padding: 0; background: transparent; color: #496175; text-align: left; cursor: pointer; font-size: 13px; }

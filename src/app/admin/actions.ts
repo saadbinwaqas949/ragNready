@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
 import { deleteCollection, deleteProduct, revalidateStorefront, saveCollection, saveProduct, saveSiteSettings } from "@/lib/data";
+import { sendOrderNotification } from "@/lib/server/order-notifications";
 
 export type ActionResult = { success: boolean; message: string; id?: string; handle?: string };
 
@@ -90,6 +91,13 @@ export async function saveSiteSettingsAction(input: unknown): Promise<ActionResu
   if (!parsed.success) return { success: false, message: "Check the settings fields and try again." };
   try { await saveSiteSettings(parsed.data); return { success: true, message: "Site settings saved." }; }
   catch { return { success: false, message: "The settings could not be saved." }; }
+}
+
+export async function sendTestOrderEmailAction(): Promise<ActionResult> {
+  await requireAdmin();
+  if (!process.env.RESEND_API_KEY || !process.env.NOTIFY_EMAIL) return { success: false, message: "Add RESEND_API_KEY and NOTIFY_EMAIL to the server environment, then restart the site." };
+  const result = await sendOrderNotification({ id: "test-order", order_number: "RR-TEST", created_at: new Date().toISOString(), customer_name: "Test Customer", phone: "03001234567", address: "Test Street 1", city: "Lahore", notes: "Sample notification", total: 1999, order_items: [{ title: "Sample product", size: "0-3 Months", quantity: 1, unit_price: 1999 }] });
+  return { success: result.sent, message: result.message };
 }
 
 export async function setOrderStatusAction(id: string, status: string): Promise<ActionResult> {

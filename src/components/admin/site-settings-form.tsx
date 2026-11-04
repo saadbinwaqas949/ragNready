@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import type { SiteSettings } from "@/lib/data/types";
-import { saveSiteSettingsAction } from "@/app/admin/actions";
+import { saveSiteSettingsAction, sendTestOrderEmailAction } from "@/app/admin/actions";
 import { SITE_CONTACT_FALLBACKS } from "@/lib/site";
 
 const socialNames = ["Instagram", "Pinterest", "X", "LinkedIn", "Facebook"] as const;
@@ -11,6 +11,7 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings | null }
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [failed, setFailed] = useState(false);
+  const [emailBusy, setEmailBusy] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setNotice("");
@@ -30,6 +31,12 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings | null }
     setNotice(result.message); setFailed(!result.success); setBusy(false);
   }
 
+  async function sendTestEmail() {
+    setEmailBusy(true); setNotice("");
+    const result = await sendTestOrderEmailAction();
+    setNotice(result.message); setFailed(!result.success); setEmailBusy(false);
+  }
+
   return <form onSubmit={submit}>
     {notice && <p className={`admin-notice${failed ? " admin-notice-error" : ""}`} role={failed ? "alert" : "status"}>{notice}</p>}
     <div className="admin-card"><div className="admin-form-grid">
@@ -46,6 +53,6 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings | null }
       <label className="admin-field">Hero button text<input className="admin-input" name="hero_cta_text" defaultValue={settings?.hero_cta_text ?? "Shop new arrivals"} /></label>
       <label className="admin-field admin-field-full">Hero subtext<textarea className="admin-textarea" name="hero_subtext" defaultValue={settings?.hero_subtext ?? ""} /></label>
       <label className="admin-field">Popup discount code<input className="admin-input" name="popup_discount_code" defaultValue={settings?.popup_discount_code ?? "CODE20OFF"} /></label>
-    </div><div className="admin-form-actions"><button className="admin-button admin-button-primary" disabled={busy}>{busy ? "Saving…" : "Save site settings"}</button></div></div>
+    </div><div className="admin-form-actions"><button className="admin-button admin-button-primary" disabled={busy}>{busy ? "Saving…" : "Save site settings"}</button><button className="admin-button" type="button" disabled={emailBusy} onClick={sendTestEmail}>{emailBusy ? "Sending…" : "Send test email"}</button></div></div>
   </form>;
 }
