@@ -100,6 +100,20 @@ export async function sendTestOrderEmailAction(): Promise<ActionResult> {
   return { success: result.sent, message: result.message };
 }
 
+export async function moderateReviewAction(id: string, status: "approved" | "rejected" | "deleted"): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+  if (!z.string().uuid().safeParse(id).success || !["approved", "rejected", "deleted"].includes(status)) return { success: false, message: "Invalid review update." };
+  if (status === "deleted") {
+    const { data: photos } = await supabase.from("review_images").select("url").eq("review_id", id);
+    const paths = (photos ?? []).map((photo) => photo.url.split("/review-images/")[1]?.split("?")[0]).filter((path): path is string => Boolean(path));
+    if (paths.length) await supabase.storage.from("review-images").remove(paths);
+  }
+  const result = status === "deleted" ? await supabase.from("reviews").delete().eq("id", id) : await supabase.from("reviews").update({ status }).eq("id", id);
+  if (result.error) return { success: false, message: "Could not update this review." };
+  revalidatePath("/admin/reviews"); revalidateTag("reviews");
+  return { success: true, message: status === "deleted" ? "Review deleted." : `Review ${status}.` };
+}
+
 export async function setOrderStatusAction(id: string, status: string): Promise<ActionResult> {
   const { supabase } = await requireAdmin();
   const idResult = z.string().uuid().safeParse(id);

@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Collection, Product, SiteSettings } from "@/lib/data/types";
-import { sampleReviews } from "@/lib/data/sample-reviews";
+import { SHOW_REVIEWS } from "@/lib/site-config";
+import type { RecentApprovedReview } from "@/lib/data/reviews";
 import { MagneticLink } from "./magnetic-link";
 import { ProductGrid } from "./product-grid";
 import { Reveal } from "./reveal";
@@ -26,7 +27,7 @@ const categories = [
   ["caps-accessories", "Baby Accessories", "/images/placeholders/product-sunshine.svg"],
 ] as const;
 
-export function HomeSections({ products, collections, settings }: { products: Product[]; collections: Collection[]; settings: SiteSettings | null }) {
+export function HomeSections({ products, collections, settings, reviews = [] }: { products: Product[]; collections: Collection[]; settings: SiteSettings | null; reviews?: RecentApprovedReview[] }) {
   const reduced = useReducedMotion();
   const heading = settings?.hero_headline || "soft beginnings, thoughtfully chosen";
   const words = heading.split(/\s+/);
@@ -68,7 +69,7 @@ export function HomeSections({ products, collections, settings }: { products: Pr
 
     <section className="section story-section"><div className="story-image" data-parallax="-6"><Image src="/images/placeholders/product-cream.svg" alt="Soft, thoughtfully chosen newborn essentials" fill quality={75} sizes="(max-width: 800px) 100vw, 48vw" /></div><Reveal><div className="story-copy"><p className="eyebrow">A softer way to welcome them</p><h2 className="section-heading section-heading-left">Welcome to ragNready</h2><p>We believe the smallest moments deserve thoughtful details. From newborn essentials to meaningful gifts, each piece is chosen to bring a little comfort to life with a new little one.</p><p className="story-counter"><strong>0–12</strong><span>months of little beginnings</span></p><Link className="text-link" href="/pages/about-us">Our story →</Link></div></Reveal></section>
 
-    <section className="section reviews-section"><Reveal><p className="eyebrow center-eyebrow">kind words from our community</p><h2 className="section-heading">Customers are saying</h2><p className="section-subtitle">A few thoughtful words from families and gift-givers.</p></Reveal><div className="reviews-row">{sampleReviews.map((review, index) => <Reveal key={review.name} delay={index * 0.035}><article className="review-card"><div className="review-stars" aria-label={`${review.rating} out of 5 stars`}>★★★★★</div><p>“{review.text}”</p><div className="review-person"><strong>{review.name}</strong><span>{review.city} · <span className="verified-badge">Verified</span></span></div></article></Reveal>)}</div><p className="sample-review-note">Sample review content shown for layout preview.</p></section>
+    {SHOW_REVIEWS && reviews.length > 0 && <section className="section reviews-section"><Reveal><p className="eyebrow center-eyebrow">kind words from our community</p><h2 className="section-heading">Customers are saying</h2><p className="section-subtitle">A few thoughtful words from families and gift-givers.</p></Reveal><div className="reviews-row">{reviews.map((review, index) => <Reveal key={review.id} delay={index * 0.035}><article className="review-card"><div className="review-stars" aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</div><p>{review.comment}</p><div className="review-person"><strong>{review.reviewer_name}</strong><span><a href={`/products/${review.product_handle}`}>{review.product_title}</a> · <span className="verified-badge">Verified purchase</span></span></div></article></Reveal>)}</div></section>}
 
     <section className="section newsletter-section"><Reveal><div className="newsletter-panel"><div><p className="eyebrow">little notes, lovely things</p><h2 className="section-heading section-heading-left">Join the ragNready family</h2><p>Thoughtful updates and a little something lovely, now and then.</p></div><NewsletterForm /></div></Reveal></section>
   </main>;
