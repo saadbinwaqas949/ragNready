@@ -202,7 +202,7 @@ html[data-theme="dark"] .hero-orb { background: radial-gradient(circle at 34% 34
 .hero-stars { position: absolute; inset: 0 0 34%; opacity: 0; transition: opacity .4s; }
 html[data-theme="dark"] .hero-stars { opacity: 1; }
 .hero-stars i { position: absolute; border-radius: 50%; background: #fdf3d8; animation: twinkle 4.2s ease-in-out infinite; }
-.clothesline { width: 100%; height: clamp(230px, 40vh, 350px); flex: none; overflow: visible; }
+.clothesline { width: 100%; height: min(380px, 22.92vw); flex: none; overflow: visible; }
 .clothesline-narrow { display: none; }
 .clothesline-string { fill: none; stroke: var(--line-string); stroke-width: 2.2; }
 .garment { animation: garment-in .9s var(--ease) var(--drop, 0ms) backwards; }
