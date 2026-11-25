@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
+import { sendContactNotification } from "@/lib/server/order-notifications";
 import { allowRequest, requestAddress } from "@/lib/server/rate-limit";
 
 const schema = z.object({
@@ -17,5 +18,6 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ message: "Check your contact details and message." }, { status: 400 });
   const { error } = await createSupabasePublicClient().from("messages").insert(parsed.data);
   if (error) return NextResponse.json({ message: "Your note could not be saved. Please try again." }, { status: 503 });
+  after(() => sendContactNotification(parsed.data));
   return NextResponse.json({ message: "Your note has been sent." }, { status: 201 });
 }

@@ -69,9 +69,11 @@ function whatsAppText(order: NotificationOrder) {
   return [`*New ragNready order ${order.order_number}*`, `${order.customer_name}, ${order.city}`, `WhatsApp: ${order.phone}`, "", ...(order.order_items ?? []).map((item) => `${item.quantity} x ${itemName(item)}`), "", `*Collect ${formatPrice(Number(order.total))}* (cash on delivery)`, `${siteUrl()}/admin/orders/${order.id}`].join("\n");
 }
 
+const ownerAddresses = () => [...new Set([process.env.ADMIN_EMAIL, process.env.NOTIFY_EMAIL].map((value) => value?.trim().toLowerCase()).filter((value): value is string => Boolean(value)))];
+
 async function emailOwner(order: NotificationOrder): Promise<ChannelResult> {
   // Each address is sent separately so one rejected recipient cannot block the other.
-  const recipients = [...new Set([process.env.ADMIN_EMAIL, process.env.NOTIFY_EMAIL].map((value) => value?.trim().toLowerCase()).filter((value): value is string => Boolean(value)))];
+  const recipients = ownerAddresses();
   if (!emailConfigured() || !recipients.length) return { channel: "email", sent: false, message: "Email is not set up: add ADMIN_EMAIL and an email provider." };
   const content = ownerEmail(order);
   const delivered: string[] = [], failed: string[] = [];
@@ -80,7 +82,7 @@ async function emailOwner(order: NotificationOrder): Promise<ChannelResult> {
     catch (error) { failed.push(`${to}: ${reason(error)}`); }
   }));
   if (failed.length) console.error(`Order email was not delivered to ${failed.length} of ${recipients.length} addresses.`);
-  return { channel: "email", sent: failed.length === 0, message: [delivered.length ? `Email sent to ${delivered.join(", ")}.` : "", failed.length ? `Not delivered to ${failed.join("; ")}` : ""].filter(Boolean).join(" ") };
+  return { channel: "email", sent: delivered.length > 0, message: [delivered.length ? `Email sent to ${delivered.join(", ")}.` : "", failed.length ? `Not delivered to ${failed.join("; ")}` : ""].filter(Boolean).join(" ") };
 }
 
 async function emailCustomer(order: NotificationOrder): Promise<ChannelResult> {
@@ -95,12 +97,20 @@ async function emailCustomer(order: NotificationOrder): Promise<ChannelResult> {
 }
 
 async function whatsAppOwner(order: NotificationOrder): Promise<ChannelResult> {
-  if (!whatsAppConfigured()) return { channel: "whatsapp", sent: false, message: "WhatsApp alerts are not set up: add WHATSAPP_NOTIFY_NUMBER and CALLMEBOT_API_KEY." };
-  try { await withRetry(() => sendAdminWhatsApp(whatsAppText(order))); return { channel: "whatsapp", sent: true, message: "WhatsApp message sent." }; }
+    try { await withRetry(() => sendAdminWhatsApp(whatsAppText(order))); return { channel: "whatsapp", sent: true, message: "WhatsApp message sent." }; }
   catch (error) { console.error("Order WhatsApp failed:", reason(error)); return { channel: "whatsapp", sent: false, message: `WhatsApp failed: ${reason(error)}` }; }
+}
+
+/** Tells the owner about a note from the contact form. Never throws. */
+export async function sendContactNotification(note: { name: string; email: string; phone: string; message: string }) {
+  const recipients = ownerAddresses();
+  if (!emailConfigured() || !recipients.length) return;
+  const text = [`From: ${note.name}`, `Email: ${note.email}`, `WhatsApp: ${note.phone || "-"}`, "", note.message].join("\n");
+  const html = emailShell(`<h1 style="font-size:22px;margin:0 0 14px">New note from ${escapeHtml(note.name)}</h1><p style="margin:0">${escapeHtml(note.email)}<br>${escapeHtml(note.phone)}</p><p style="white-space:pre-wrap">${escapeHtml(note.message)}</p>${button(`${siteUrl()}/admin/messages`, "Open messages", "#1f3350")}`);
+  await Promise.allSettled(recipients.map((to) => sendEmail({ to, subject: `New note from ${note.name.replace(/[\r\n]+/g, " ")}`, text, html, replyTo: note.email })));
 }
 
 /** Never throws: an alert problem must not affect an order that is already saved. */
 export async function sendOrderNotifications(order: NotificationOrder, options: { includeCustomer?: boolean } = {}) {
-  return Promise.all([emailOwner(order), whatsAppOwner(order), ...(options.includeCustomer ? [emailCustomer(order)] : [])]);
+  return Promise.all([emailOwner(order), ...(whatsAppConfigured() ? [whatsAppOwner(order)] : []), ...(options.includeCustomer && canEmailCustomers() ? [emailCustomer(order)] : [])]);
 }

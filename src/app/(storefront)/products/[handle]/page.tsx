@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const product = await getProductByHandle(handle);
   if (!product) return { title: "Product not found" };
   const description = product.description.slice(0, 160);
-  return { title: product.title, description, alternates: { canonical: `/products/${product.handle}` }, openGraph: { title: product.title, description, type: "website", images: product.images[0] ? [product.images[0].url] : [] } };
+  return { title: product.title, description, alternates: { canonical: `/products/${product.handle}` }, openGraph: { title: product.title, description, type: "website", images: [product.images[0]?.url ?? "/opengraph-image"] } };
 }
 
 export default async function ProductPage({ params }: PageProps) {

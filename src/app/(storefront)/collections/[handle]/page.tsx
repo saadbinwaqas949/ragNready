@@ -9,7 +9,7 @@ type Props = { params: Promise<{ handle: string }>; searchParams: Promise<Search
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { handle } = await params;
   const collection = await getCollectionByHandle(handle);
-  return collection ? { title: collection.title, description: collection.description, alternates: { canonical: `/collections/${collection.handle}` }, openGraph: { title: collection.title, description: collection.description } } : { title: "Collection not found", robots: { index: false, follow: false } };
+  return collection ? { title: collection.title, description: collection.description, alternates: { canonical: `/collections/${collection.handle}` }, openGraph: { title: collection.title, description: collection.description, images: ["/opengraph-image"] } } : { title: "Collection not found", robots: { index: false, follow: false } };
 }
 
 export default async function CollectionHandlePage({ params, searchParams }: Props) {

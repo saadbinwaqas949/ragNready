@@ -52,12 +52,13 @@ Every order sends its alerts as soon as it is saved, whether or not the customer
 
 ### 2. WhatsApp order alerts
 
-CallMeBot is free and messages only your own number:
+This uses Meta's official WhatsApp Cloud API and its test number, which may message a few verified phones. Meta can change what it offers, so check the terms it shows you.
 
-1. Follow https://www.callmebot.com/blog/free-api-whatsapp-messages/ from the phone that should receive alerts. It replies with an API key.
-2. Set `WHATSAPP_NOTIFY_NUMBER` and `CALLMEBOT_API_KEY`.
-
-Because it is a third-party gateway, the alert leaves out the street address and email. For a larger shop use Meta's WhatsApp Cloud API: set `WHATSAPP_CLOUD_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`, and get a template named `new_order` with one body variable approved.
+1. At https://developers.facebook.com create a Business app and add the WhatsApp product. Meta creates a test number.
+2. In **WhatsApp > API Setup**, add your own phone under "To" and confirm the code it sends you. Copy the **Phone number ID** into `WHATSAPP_PHONE_NUMBER_ID`.
+3. In **WhatsApp Manager > Message templates** create a **Utility** template named `new_order`, language **English**, with this body: `New shop order: {{1}} Please confirm it with the customer.` Wait for it to be approved.
+4. In **Business Settings > System users** add a system user, give it full control of the app and the WhatsApp account, and generate a token that never expires with `whatsapp_business_messaging` and `whatsapp_business_management`. Put it in `WHATSAPP_CLOUD_TOKEN`. The token on the API Setup page expires within a day, so do not use it.
+5. Set `WHATSAPP_NOTIFY_NUMBER` and restart or redeploy, then use **Send test order alert** in Site Settings.
 
 ### 3. Google sign-in (optional for customers)
 
@@ -69,7 +70,17 @@ The button appears on the site within five minutes of switching the provider on.
 
 ### 4. Keep Supabase awake
 
-Free Supabase projects pause after about a week without traffic, and a paused project takes the whole shop offline. Use the Pro plan, or keep regular traffic on the site.
+Free Supabase projects pause after a week without activity, and a paused project takes the whole shop offline. Point a free uptime monitor at `https://YOUR-DOMAIN/api/health` every few minutes or hours: it queries the database and also warns you when the shop is down. The Pro plan never pauses.
+
+### 5. Publish
+
+1. Import the GitHub repository into the host. Build command `npm run build`.
+2. Add every variable from `.env.example` that has a value in your `.env.local`, except `PASSWORD`. Set `SITE_URL` to the live address.
+3. Connect the domain, then update the Supabase URL Configuration in step 3.
+4. Verify the domain in Resend and set `EMAIL_FROM`.
+5. Place a real test order, check the alerts, then cancel it in Admin to return the stock.
+
+To run on your own machine instead: `npm ci`, `npm run build`, `npm run start` behind a Cloudflare Tunnel.
 
 ## Themes and motion
 

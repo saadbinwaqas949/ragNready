@@ -13,5 +13,9 @@ export function allowRequest(key: string, limit: number, windowMs: number) {
 }
 
 export function requestAddress(request: Request) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const header = (name: string) => request.headers.get(name)?.trim();
+  // Visitors can forge x-forwarded-for; prefer the header the hosting platform sets itself.
+  if (process.env.VERCEL) return header("x-real-ip") || "unknown";
+  if (process.env.NETLIFY) return header("x-nf-client-connection-ip") || "unknown";
+  return header("cf-connecting-ip") || header("x-real-ip") || header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
