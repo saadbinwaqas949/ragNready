@@ -30,6 +30,7 @@ This repository contains a Next.js App Router e-commerce storefront for ragNread
 - Checkout requires name, WhatsApp number, email, address and city (`lib/storefront/checkout-schema.ts`). `/api/cart` refreshes price and stock. Orders are idempotent through `checkout_token`.
 - Order alerts: `lib/server/order-notifications.ts` sends owner email, owner WhatsApp and customer email through `email.ts` and `whatsapp.ts`, after the response.
 - Migration `202611250001_accounts_wishlists_delivery.sql` is applied to the live project. It also adds delivery fees, cancel/reopen stock sync and a confirmed-email admin check.
+- Alert results are stored in `orders.alerts` (migration `202611250002_order_alerts.sql`, applied) and shown on the admin order page. Admin uses day and night tokens in `admin.css` (`--a-*`). Phone and desktop share the same content and controls; the clothesline has a wide and a narrow layout.
 - Saving a product updates sizes in place. Never delete and recreate variants: their ids are used by carts and orders.
 
 ### Recent repository history

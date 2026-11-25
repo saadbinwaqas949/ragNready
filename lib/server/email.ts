@@ -16,6 +16,9 @@ export function canEmailCustomers() {
   return Boolean((process.env.SMTP_USER && process.env.SMTP_PASSWORD) || (process.env.RESEND_API_KEY && process.env.EMAIL_FROM));
 }
 
+/** Resend without a verified domain reaches only the Resend account owner, so it does not count. */
+export const canEmailOwner = canEmailCustomers;
+
 export async function sendEmail(message: EmailMessage): Promise<void> {
   const { SMTP_USER: user, SMTP_PASSWORD: pass, RESEND_API_KEY: resendKey } = process.env;
   if (user && pass) {

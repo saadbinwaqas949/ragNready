@@ -665,3 +665,7 @@ $$;
 revoke all on function public.sync_stock_with_order_status() from public, anon, authenticated;
 drop trigger if exists orders_sync_stock on public.orders;
 create trigger orders_sync_stock after update of status on public.orders for each row execute function public.sync_stock_with_order_status();
+
+-- ===== 202611250002_order_alerts.sql =====
+-- Delivery result of each order alert (owner email, owner WhatsApp, customer email), shown in admin.
+alter table public.orders add column if not exists alerts jsonb;

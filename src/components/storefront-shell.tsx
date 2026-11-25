@@ -102,20 +102,15 @@ export function StorefrontShell({ announcements, whatsapp, collections }: { anno
         </nav>
         <Link href="/" className="header-logo" aria-label="ragNready home"><BrandWordmark /></Link>
         <div className="header-actions">
-          <span className="desktop-only"><ThemeToggle /></span>
-          <button className="icon-button desktop-only" aria-label="Search" onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></button>
-          <Link className="icon-button desktop-only" href="/account" aria-label={accountLabel} title={accountLabel}><UserRound aria-hidden="true" />{signedIn && <span className="signed-in-dot" />}</Link>
+          <ThemeToggle />
+          <button className="icon-button" aria-label="Search" onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></button>
+          <Link className="icon-button" href="/account" aria-label={accountLabel} title={accountLabel}><UserRound aria-hidden="true" />{signedIn && <span className="signed-in-dot" />}</Link>
           <Link className="icon-button" href="/pages/wishlist" aria-label={`Wishlist, ${wishlistCount} saved`}><Heart aria-hidden="true" /><CountBadge value={wishlistCount} /></Link>
           <button className="icon-button" id="cart-trigger" aria-label={`Open cart, ${count} items`} onClick={() => setCartOpen(true)}><motion.span key={count} className="bag-wiggle" initial={count ? { rotate: 0 } : false} animate={count ? { rotate: [0, -14, 11, -6, 0] } : undefined} transition={{ duration: 0.5 }}><ShoppingBag aria-hidden="true" /></motion.span><CountBadge value={count} /></button>
         </div>
       </div>
       <AnimatePresence>{menuOpen && <motion.div id="mobile-navigation" className="mobile-nav" initial={{ opacity: 0, clipPath: "inset(0 0 100% 0)" }} animate={{ opacity: 1, clipPath: "inset(0 0 0% 0)" }} exit={{ opacity: 0, clipPath: "inset(0 0 100% 0)" }} transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}>
         <nav aria-label="Mobile navigation">{mobileLinks.map(([label, href], index) => <motion.div key={href} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 + index * 0.04, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}><Link href={href} onClick={() => setMenuOpen(false)} aria-current={pathname === href ? "page" : undefined}>{label}</Link></motion.div>)}</nav>
-        <div className="mobile-nav-tools">
-          <button type="button" onClick={() => { setMenuOpen(false); setSearchOpen(true); }}><Search aria-hidden="true" />Search</button>
-          <Link href="/account" onClick={() => setMenuOpen(false)}><UserRound aria-hidden="true" />{signedIn ? "Your account" : "Account"}</Link>
-          <ThemeToggle withLabel />
-        </div>
       </motion.div>}</AnimatePresence>
     </header>
     {loaded.cart && <CartDrawer open={cartOpen} onClose={closeCart} />}

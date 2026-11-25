@@ -8,6 +8,19 @@ import { sendAdminWhatsApp, whatsAppConfigured } from "./whatsapp";
 export type NotificationItem = { title: string; size?: string | null; quantity: number; unit_price: number; line_total?: number };
 export type NotificationOrder = { id: string; order_number: string; created_at: string; customer_name: string; phone: string; email?: string | null; address: string; city: string; notes: string; subtotal?: number; delivery_fee?: number; total: number; order_items: NotificationItem[] };
 export type ChannelResult = { channel: "email" | "whatsapp" | "customer-email"; sent: boolean; message: string };
+export type OrderAlerts = { at: string; results: ChannelResult[] };
+
+/** Short outages at the mail or WhatsApp provider should not lose an alert. */
+async function withRetry(send: () => Promise<void>) {
+  for (let attempt = 1; ; attempt++) {
+    try { return await send(); }
+    catch (error) {
+      if (attempt === 3 || isPermanent(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+    }
+  }
+}
+const isPermanent = (error: unknown) => /verify a domain|testing emails|invalid|rejected|not configured|Username and Password/i.test(error instanceof Error ? error.message : "");
 
 const entities: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (char) => entities[char]);
@@ -63,11 +76,11 @@ async function emailOwner(order: NotificationOrder): Promise<ChannelResult> {
   const content = ownerEmail(order);
   const delivered: string[] = [], failed: string[] = [];
   await Promise.all(recipients.map(async (to) => {
-    try { await sendEmail({ to, ...content, ...(order.email ? { replyTo: order.email } : {}) }); delivered.push(to); }
+    try { await withRetry(() => sendEmail({ to, ...content, ...(order.email ? { replyTo: order.email } : {}) })); delivered.push(to); }
     catch (error) { failed.push(`${to}: ${reason(error)}`); }
   }));
   if (failed.length) console.error(`Order email was not delivered to ${failed.length} of ${recipients.length} addresses.`);
-  return { channel: "email", sent: delivered.length > 0, message: [delivered.length ? `Email sent to ${delivered.join(", ")}.` : "", failed.length ? `Not delivered to ${failed.join("; ")}` : ""].filter(Boolean).join(" ") };
+  return { channel: "email", sent: failed.length === 0, message: [delivered.length ? `Email sent to ${delivered.join(", ")}.` : "", failed.length ? `Not delivered to ${failed.join("; ")}` : ""].filter(Boolean).join(" ") };
 }
 
 async function emailCustomer(order: NotificationOrder): Promise<ChannelResult> {
@@ -83,7 +96,7 @@ async function emailCustomer(order: NotificationOrder): Promise<ChannelResult> {
 
 async function whatsAppOwner(order: NotificationOrder): Promise<ChannelResult> {
   if (!whatsAppConfigured()) return { channel: "whatsapp", sent: false, message: "WhatsApp alerts are not set up: add WHATSAPP_NOTIFY_NUMBER and CALLMEBOT_API_KEY." };
-  try { await sendAdminWhatsApp(whatsAppText(order)); return { channel: "whatsapp", sent: true, message: "WhatsApp message sent." }; }
+  try { await withRetry(() => sendAdminWhatsApp(whatsAppText(order))); return { channel: "whatsapp", sent: true, message: "WhatsApp message sent." }; }
   catch (error) { console.error("Order WhatsApp failed:", reason(error)); return { channel: "whatsapp", sent: false, message: `WhatsApp failed: ${reason(error)}` }; }
 }
 

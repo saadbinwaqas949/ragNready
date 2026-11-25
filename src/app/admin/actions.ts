@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
 import { deleteCollection, deleteProduct, revalidateStorefront, saveCollection, saveProduct, saveSiteSettings } from "@/lib/data";
-import { sendOrderNotifications } from "@/lib/server/order-notifications";
+import { sendOrderNotifications, type NotificationOrder } from "@/lib/server/order-notifications";
 import { SHOW_REVIEWS } from "@/lib/site-config";
 
 export type ActionResult = { success: boolean; message: string; id?: string; handle?: string };
@@ -101,6 +101,19 @@ export async function saveSiteSettingsAction(input: unknown): Promise<ActionResu
 export async function sendTestOrderAlertAction(): Promise<ActionResult> {
   await requireAdmin();
   const results = await sendOrderNotifications({ id: "test-order", order_number: "RR-TEST", created_at: new Date().toISOString(), customer_name: "Test Customer", phone: "+923001234567", email: null, address: "Test Street 1", city: "Lahore", notes: "Sample notification", total: 1999, order_items: [{ title: "Sample product", size: "0-3 Months", quantity: 1, unit_price: 1999 }] });
+  return { success: results.every((result) => result.sent), message: results.map((result) => result.message).join(" ") };
+}
+
+export async function resendOrderAlertAction(id: string): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+  if (!z.string().uuid().safeParse(id).success) return { success: false, message: "That order could not be found." };
+  const { data: order, error } = await supabase.from("orders").select("*, order_items(title,size,quantity,unit_price,line_total)").eq("id", id).maybeSingle();
+  if (error || !order) return { success: false, message: "That order could not be loaded." };
+  const results = await sendOrderNotifications(order as unknown as NotificationOrder);
+  // Keep the customer email result from when the order was placed.
+  const earlier = ((order.alerts?.results ?? []) as { channel: string }[]).filter((result) => result.channel === "customer-email");
+  await supabase.from("orders").update({ alerts: { at: new Date().toISOString(), results: [...results, ...earlier] } }).eq("id", id);
+  revalidatePath(`/admin/orders/${id}`); revalidatePath("/admin/orders");
   return { success: results.every((result) => result.sent), message: results.map((result) => result.message).join(" ") };
 }
 

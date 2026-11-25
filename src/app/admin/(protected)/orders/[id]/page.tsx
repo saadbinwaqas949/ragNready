@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdminOrder } from "@/lib/data/admin";
 import { whatsAppLink } from "@/lib/storefront/phone";
+import { OrderAlerts } from "@/components/admin/order-alerts";
 import { OrderStatusControl } from "@/components/admin/order-status-control";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -13,6 +14,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   return <><div className="admin-page-heading"><div><h1>Order {order.order_number}</h1><p>Placed {new Date(order.created_at).toLocaleString("en-PK", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Karachi" })}</p></div><Link className="admin-button" href="/admin/orders">Back to orders</Link></div>
     <div className="admin-order-summary"><div className="admin-stat"><span>Customer</span><strong>{order.customer_name}</strong></div><div className="admin-stat"><span>Total</span><strong>Rs.{Number(order.total).toLocaleString("en-PK", { minimumFractionDigits: 2 })}</strong>{Number(order.delivery_fee) > 0 && <span>Includes Rs.{Number(order.delivery_fee).toLocaleString("en-PK")} delivery</span>}</div><div className="admin-stat"><span>Status</span><strong>{order.status}</strong></div></div>
     <section className="admin-card" style={{ marginBottom: 18 }}><h2 style={{ marginTop: 0, fontSize: 18 }}>Delivery details</h2><p>{order.phone}{order.email ? ` · ${order.email}` : ""}</p><p>{order.address}, {order.city}</p>{order.notes && <p>Notes: {order.notes}</p>}<div className="admin-inline-actions"><a className="admin-button" href={chat} target="_blank" rel="noreferrer">Message customer on WhatsApp</a><OrderStatusControl id={order.id} status={order.status} /></div></section>
+    <OrderAlerts id={order.id} alerts={order.alerts ?? null} />
     <section className="admin-card"><h2 style={{ marginTop: 0, fontSize: 18 }}>Items</h2><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Product</th><th>Size</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>{order.order_items?.map((item: { id: string; title: string; size: string | null; quantity: number; unit_price: number; line_total: number }) => <tr key={item.id}><td>{item.title}</td><td>{item.size ?? "—"}</td><td>{item.quantity}</td><td>Rs.{Number(item.unit_price).toFixed(2)}</td><td>Rs.{Number(item.line_total).toFixed(2)}</td></tr>)}</tbody></table></div></section>
   </>;
 }

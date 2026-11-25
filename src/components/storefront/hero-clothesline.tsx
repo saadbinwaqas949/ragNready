@@ -2,12 +2,12 @@
 
 import { useEffect, useRef } from "react";
 
-/** x is where the garment hangs on a 1440-wide line; the line sags like a real one. */
-const lineY = (x: number) => 46 + 58 * (1 - ((x - 720) / 760) ** 2);
+/** x is where the garment hangs, on a wide line and on one narrow enough for phones. */
 const garments = [
-  { x: 150, name: "romper" }, { x: 388, name: "cap" }, { x: 610, name: "bodysuit" },
-  { x: 846, name: "frock" }, { x: 1064, name: "socks" }, { x: 1292, name: "bib" },
+  { name: "romper", wide: 150, narrow: 92 }, { name: "cap", wide: 388, narrow: 246 }, { name: "bodysuit", wide: 610, narrow: 396 },
+  { name: "frock", wide: 846, narrow: 568 }, { name: "socks", wide: 1064, narrow: 722 }, { name: "bib", wide: 1292, narrow: 868 },
 ] as const;
+const lines = { wide: { width: 1440, height: 330 }, narrow: { width: 950, height: 330 } } as const;
 
 const Peg = ({ x }: { x: number }) => <g transform={`translate(${x} -9)`}><rect className="peg" x="-4.5" width="9" height="28" rx="3.5" /><path className="peg-line" d="M-4.5 12h9" /></g>;
 
@@ -53,8 +53,8 @@ function Garment({ name }: { name: (typeof garments)[number]["name"] }) {
   }
 }
 
-/** A small washing line. Garments drift in the breeze and swing when the pointer brushes past. */
-export function HeroClothesline() {
+/** One washing line. Garments drift in the breeze and swing when the pointer brushes past. */
+function Line({ layout }: { layout: keyof typeof lines }) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -96,9 +96,17 @@ export function HeroClothesline() {
     return () => { stop(); observer.disconnect(); document.removeEventListener("visibilitychange", onVisibility); window.removeEventListener("pointermove", onMove); };
   }, []);
 
-  const stringPath = `M-40 ${lineY(-40)}${Array.from({ length: 39 }, (_, index) => { const x = index * 40; return `L${x} ${lineY(x).toFixed(1)}`; }).join("")}`;
-  return <svg ref={svgRef} className="clothesline" viewBox="0 0 1440 330" preserveAspectRatio="xMidYMin slice" role="img" aria-label="Baby clothes drying on a washing line">
+  const { width, height } = lines[layout];
+  // The line sags like a real one.
+  const lineY = (x: number) => 46 + 58 * (1 - ((x - width / 2) / (width / 2 + 40)) ** 2);
+  const stringPath = `M-40 ${lineY(-40).toFixed(1)}${Array.from({ length: Math.ceil(width / 40) + 3 }, (_, index) => { const x = index * 40; return `L${x} ${lineY(x).toFixed(1)}`; }).join("")}`;
+  return <svg ref={svgRef} className={`clothesline clothesline-${layout}`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMin slice" role="img" aria-label="Baby clothes drying on a washing line">
     <path className="clothesline-string" d={stringPath} />
-    {garments.map(({ x, name }, index) => <g key={name} transform={`translate(${x} ${lineY(x).toFixed(1)})`}><g className="garment" style={{ "--drop": `${120 + index * 90}ms` } as React.CSSProperties}><g className="garment-swing"><Garment name={name} /></g></g></g>)}
+    {garments.map((garment, index) => { const x = garment[layout], name = garment.name; return <g key={name} transform={`translate(${x} ${lineY(x).toFixed(1)})`}><g className="garment" style={{ "--drop": `${120 + index * 90}ms` } as React.CSSProperties}><g className="garment-swing"><Garment name={name} /></g></g></g>; })}
   </svg>;
+}
+
+/** Only one of the two is displayed; the hidden one never animates. */
+export function HeroClothesline() {
+  return <><Line layout="wide" /><Line layout="narrow" /></>;
 }

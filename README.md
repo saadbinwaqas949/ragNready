@@ -48,6 +48,8 @@ Resend's free sender only delivers to the owner of the Resend account. To reach 
 
 Alternatively verify a domain in Resend and set `EMAIL_FROM`, for example `ragNready <orders@your-domain>`. Customer confirmation emails turn on automatically with either option.
 
+Every order sends its alerts as soon as it is saved, whether or not the customer taps **Confirm on WhatsApp**. Each order in Admin shows whether the alerts were delivered and can send them again.
+
 ### 2. WhatsApp order alerts
 
 CallMeBot is free and messages only your own number:
@@ -71,7 +73,7 @@ Free Supabase projects pause after about a week without traffic, and a paused pr
 
 ## Themes and motion
 
-Colours live as CSS variables at the top of `src/app/globals.css`, once for day and once for `html[data-theme="dark"]`. The first visit follows the visitor's device; the toggle remembers their choice. All motion respects reduced-motion settings.
+Colours live as CSS variables at the top of `src/app/globals.css`, once for day and once for `html[data-theme="dark"]`. Every device starts on the day theme; the toggle remembers each visitor's choice. Admin uses the same themes. All motion respects reduced-motion settings.
 
 ## Admin guide
 

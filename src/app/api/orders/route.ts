@@ -8,7 +8,7 @@ import { sendOrderNotifications, type NotificationOrder } from "@/lib/server/ord
 import { checkoutSchema } from "@/lib/storefront/checkout-schema";
 import { phoneDigits } from "@/lib/storefront/phone";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const orderSchema = z.object({
   customer: checkoutSchema,
@@ -44,11 +44,13 @@ export async function POST(request: Request) {
       }
       throw error;
     }
-    // Runs after the customer already has their confirmation, so slow email never delays checkout.
+    // Sent for every order, whether or not the customer taps "Confirm on WhatsApp". Runs after the
+    // customer already has their confirmation, so a slow provider never delays checkout.
     if (!data.duplicate) after(async () => {
       const { data: saved, error: loadError } = await supabase.from("orders").select("*, order_items(title,size,quantity,unit_price,line_total)").eq("id", data.id).single();
       if (loadError || !saved) { console.error("Saved order could not be loaded for its alerts."); return; }
-      await sendOrderNotifications(saved as unknown as NotificationOrder, { includeCustomer: true });
+      const results = await sendOrderNotifications(saved as unknown as NotificationOrder, { includeCustomer: true });
+      await supabase.from("orders").update({ alerts: { at: new Date().toISOString(), results } }).eq("id", data.id);
     });
     revalidateTag("products");
     return NextResponse.json({ order: { id: data.id, order_number: data.order_number } }, { status: 201 });

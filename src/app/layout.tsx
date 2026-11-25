@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#faf8f4" };
 
 // Runs before first paint so the saved theme never flashes.
-const themeScript = `(function(){try{var d=document.documentElement,s=localStorage.getItem("ragnready-theme"),t=s||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");d.dataset.theme=t;d.classList.add("js");if(t==="dark"){var m=document.querySelector('meta[name="theme-color"]');m&&m.setAttribute("content","#0e1829")}}catch(e){}})()`;
+const themeScript = `(function(){try{var d=document.documentElement,s=localStorage.getItem("ragnready-theme"),t=s||"light";d.dataset.theme=t;d.classList.add("js");if(t==="dark"){var m=document.querySelector('meta[name="theme-color"]');m&&m.setAttribute("content","#0e1829")}}catch(e){}})()`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const organization = { "@context": "https://schema.org", "@type": "Organization", name: "ragNready", url: SITE_ORIGIN, logo: new URL("/icon.svg", SITE_ORIGIN).toString(), description };
