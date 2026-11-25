@@ -4,6 +4,7 @@ import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { ProductImageInput } from "@/lib/data/types";
+import { randomUuid } from "@/lib/storefront/uuid";
 
 type Photo = ProductImageInput & { key: string };
 
@@ -65,7 +66,7 @@ export function ImageUploader({ initialImages = [], onChange, maxFiles = 8, fold
     try {
       for (const file of selected) {
         const blob = await compressImage(file);
-        const objectPath = `${folder}/${crypto.randomUUID()}.webp`;
+        const objectPath = `${folder}/${randomUuid()}.webp`;
         const { error: uploadError } = await client.storage.from("product-images").upload(objectPath, blob, { contentType: "image/webp", cacheControl: "31536000" });
         if (uploadError) throw uploadError;
         const url = client.storage.from("product-images").getPublicUrl(objectPath).data.publicUrl;

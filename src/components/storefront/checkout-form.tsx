@@ -8,6 +8,7 @@ import { HandCoins, Lock, MessageCircle } from "lucide-react";
 import { deliveryFee, formatPrice } from "@/lib/storefront/format";
 import { checkoutSchema } from "@/lib/storefront/checkout-schema";
 import { cartSubtotal, useShopStore } from "@/lib/storefront/store";
+import { randomUuid } from "@/lib/storefront/uuid";
 import { useCartCheck } from "@/hooks/use-cart-check";
 
 export type CheckoutDefaults = { name?: string; phone?: string; email?: string; address?: string; city?: string };
@@ -32,7 +33,7 @@ export function CheckoutForm({ defaults, signedIn, googleEnabled }: { defaults: 
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
   const formRef = useRef<HTMLFormElement>(null);
   const token = useRef("");
-  useEffect(() => { token.current = crypto.randomUUID(); }, []);
+  useEffect(() => { token.current = randomUuid(); }, []);
 
   const buyable = cart.filter((line) => line.stock !== 0);
   const subtotal = cartSubtotal(cart);
