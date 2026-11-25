@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { WishlistProducts } from "@/components/storefront/wishlist-products";
+import { googleSignInEnabled } from "@/lib/supabase/auth-providers";
 import { getProducts } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Wishlist", robots: { index: false, follow: false } };
 
 export default async function WishlistPage() {
-  const products = await getProducts();
-  return <main className="section wishlist-page"><p className="eyebrow center-eyebrow">your saved little things</p><h1 className="section-heading">Your Wishlist</h1><p className="section-subtitle">Keep your thoughtful favourites close.</p><WishlistProducts products={products} /></main>;
+  const [products, googleEnabled] = await Promise.all([getProducts(), googleSignInEnabled()]);
+  return <main className="section page-full"><header className="collection-head"><h1 className="page-title">Wishlist</h1></header><WishlistProducts googleEnabled={googleEnabled} products={products} /></main>;
 }

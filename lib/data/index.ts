@@ -54,7 +54,7 @@ async function attachDetails(rows: ProductRecord[]): Promise<Product[]> {
   return rows.map((row) => ({
     ...row,
     images: detail.images.filter((image) => image.product_id === row.id).map(({ url, alt, position }) => ({ url, alt, position })),
-    variants: detail.variants.filter((variant) => variant.product_id === row.id).map(({ id, size, stock, sku }) => ({ id, size, stock, sku })),
+    variants: detail.variants.filter((variant) => variant.product_id === row.id).map(({ id, size, stock, sku }) => ({ id, size, stock, sku })).sort((a, b) => a.size.localeCompare(b.size, "en", { numeric: true })),
     collection_handles: detail.links.filter((link) => link.product_id === row.id).map((link) => handles.get(link.collection_id)).filter((handle): handle is string => Boolean(handle)),
   }));
 }
@@ -87,7 +87,7 @@ const readProducts = unstable_cache(async (filters: ProductFilters): Promise<Pro
   if (typeof filters.minPrice === "number") query = query.gte("price", filters.minPrice);
   if (typeof filters.maxPrice === "number") query = query.lte("price", filters.maxPrice);
   if (filters.search?.trim()) {
-    const search = filters.search.trim().slice(0, 100).replace(/[%,_]/g, " ");
+    const search = filters.search.trim().slice(0, 100).replace(/[%,_()\\]/g, " ");
     query = query.ilike("title", `%${search}%`);
   }
   if (selectedIds) query = query.in("id", selectedIds);
@@ -146,7 +146,7 @@ export const getCollectionByHandle = cache(async (handle: string): Promise<Colle
 
 const readSiteSettings = unstable_cache(async (): Promise<SiteSettings | null> => {
   const supabase = createSupabasePublicClient();
-  const result = await supabase.from("site_settings").select("id,store_name,tagline,phone,whatsapp_number,email,address,social_links,legal_owner_line,announcement_messages,hero_headline,hero_subtext,hero_cta_text,popup_discount_code,is_published,updated_at").eq("setting_key", "storefront").maybeSingle();
+  const result = await supabase.from("site_settings").select("*").eq("setting_key", "storefront").maybeSingle();
   if (result.error) throw result.error;
   return (result.data as SiteSettings | null) ?? null;
 }, ["ragnready-site-settings"], { revalidate: 3600, tags: ["site-settings"] });
@@ -163,29 +163,42 @@ export function revalidateStorefront() {
   revalidateTag("site-settings");
 }
 
-/** Admin writes use the caller's Supabase session, so RLS checks their admin email. */
+/**
+ * Admin writes use the caller's Supabase session, so RLS checks their admin email.
+ * Sizes are updated in place: deleting and re-adding them would change their ids and
+ * break every cart and past order that refers to them.
+ */
 export async function saveProduct(input: ProductInput): Promise<string> {
   const supabase = await createSupabaseServerClient();
-  const { images, variants, collection_handles, ...fields } = input;
-  const productResult = await supabase.from("products").upsert(fields, { onConflict: "handle" }).select("id").single();
+  const { images, variants, collection_handles, id, ...fields } = input;
+  const productResult = id
+    ? await supabase.from("products").update(fields).eq("id", id).select("id").single()
+    : await supabase.from("products").insert(fields).select("id").single();
   if (productResult.error) throw productResult.error;
   const productId = productResult.data.id as string;
 
-  const [collectionRows, oldImages, oldVariants, oldLinks] = await Promise.all([
-    collection_handles.length ? supabase.from("collections").select("id,handle").in("handle", collection_handles) : Promise.resolve({ data: [], error: null }),
+  const [collectionRows, currentVariants] = await Promise.all([
+    collection_handles.length ? supabase.from("collections").select("id").in("handle", collection_handles) : Promise.resolve({ data: [], error: null }),
+    supabase.from("product_variants").select("id,size").eq("product_id", productId),
+  ]);
+  if (collectionRows.error) throw collectionRows.error;
+  if (currentVariants.error) throw currentVariants.error;
+
+  const keptSizes = new Set(variants.map((variant) => variant.size));
+  const removedIds = (currentVariants.data ?? []).filter((variant) => !keptSizes.has(variant.size)).map((variant) => variant.id as string);
+  const firstWrites = await Promise.all([
+    removedIds.length ? supabase.from("product_variants").delete().in("id", removedIds) : Promise.resolve({ error: null }),
+    variants.length ? supabase.from("product_variants").upsert(variants.map((variant) => ({ ...variant, product_id: productId })), { onConflict: "product_id,size" }) : Promise.resolve({ error: null }),
     supabase.from("product_images").delete().eq("product_id", productId),
-    supabase.from("product_variants").delete().eq("product_id", productId),
     supabase.from("product_collections").delete().eq("product_id", productId),
   ]);
-  for (const result of [collectionRows, oldImages, oldVariants, oldLinks]) if (result.error) throw result.error;
+  for (const result of firstWrites) if (result.error) throw result.error;
 
-  const writes = [
+  const writes = await Promise.all([
     images.length ? supabase.from("product_images").insert(images.map((image) => ({ ...image, product_id: productId }))) : Promise.resolve({ error: null }),
-    variants.length ? supabase.from("product_variants").insert(variants.map((variant) => ({ ...variant, product_id: productId }))) : Promise.resolve({ error: null }),
     collectionRows.data?.length ? supabase.from("product_collections").insert(collectionRows.data.map((collection) => ({ product_id: productId, collection_id: collection.id }))) : Promise.resolve({ error: null }),
-  ];
-  const results = await Promise.all(writes);
-  for (const result of results) if (result.error) throw result.error;
+  ]);
+  for (const result of writes) if (result.error) throw result.error;
   revalidateStorefront();
   return productId;
 }
@@ -199,7 +212,10 @@ export async function deleteProduct(id: string): Promise<void> {
 
 export async function saveCollection(input: CollectionInput): Promise<string> {
   const supabase = await createSupabaseServerClient();
-  const result = await supabase.from("collections").upsert(input, { onConflict: "handle" }).select("id").single();
+  const { id, ...fields } = input;
+  const result = id
+    ? await supabase.from("collections").update(fields).eq("id", id).select("id").single()
+    : await supabase.from("collections").insert(fields).select("id").single();
   if (result.error) throw result.error;
   revalidateStorefront();
   return result.data.id as string;

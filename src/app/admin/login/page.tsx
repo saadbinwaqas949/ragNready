@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
 import "../admin.css";
 
-export const metadata: Metadata = { title: "Admin login | ragNready", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Admin login", robots: { index: false, follow: false } };
 
 export default async function AdminLoginPage({ searchParams }: { searchParams: Promise<{ setup?: string; unauthorized?: string }> }) {
   const params = await searchParams;

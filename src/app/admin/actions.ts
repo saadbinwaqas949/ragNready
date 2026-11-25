@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
 import { deleteCollection, deleteProduct, revalidateStorefront, saveCollection, saveProduct, saveSiteSettings } from "@/lib/data";
-import { sendOrderNotification } from "@/lib/server/order-notifications";
+import { sendOrderNotifications } from "@/lib/server/order-notifications";
 import { SHOW_REVIEWS } from "@/lib/site-config";
 
 export type ActionResult = { success: boolean; message: string; id?: string; handle?: string };
@@ -23,15 +23,19 @@ const collectionSchema = z.object({ id: z.string().uuid().optional(), title: z.s
 const settingsSchema = z.object({
   store_name: z.string().min(1).max(120), tagline: z.string().max(300), phone: z.string().max(60), whatsapp_number: z.string().max(60),
   email: z.string().email().max(254), address: z.string().max(500), social_links: z.record(z.string(), z.string()).default({}), legal_owner_line: z.string().max(250).nullable(),
-  announcement_messages: z.array(z.string().max(300)).max(8), hero_headline: z.string().max(200), hero_subtext: z.string().max(1000), hero_cta_text: z.string().max(80), popup_discount_code: z.string().max(60), is_published: z.boolean().default(true),
+  announcement_messages: z.array(z.string().max(300)).max(8), hero_headline: z.string().max(200), hero_subtext: z.string().max(1000), hero_cta_text: z.string().max(80), delivery_fee: z.number().finite().min(0).max(100000), free_delivery_over: z.number().finite().min(0).max(10000000).nullable(), is_published: z.boolean().default(true),
 });
 
 export async function saveProductAction(input: unknown): Promise<ActionResult> {
   await requireAdmin();
   const parsed = productSchema.safeParse(input);
   if (!parsed.success) return { success: false, message: "Check the product details and try again." };
+  if (parsed.data.compare_at_price !== null && parsed.data.compare_at_price <= parsed.data.price) return { success: false, message: "The compare-at price is the old, higher price. Make it more than the price, or leave it empty." };
   try { const id = await saveProduct(parsed.data); return { success: true, id, message: "Product saved." }; }
-  catch { return { success: false, message: "The product could not be saved. Check your connection and image details." }; }
+  catch (error) {
+    if ((error as { code?: string })?.code === "23505") return { success: false, message: "Another product already uses that handle or SKU. Change it and save again." };
+    return { success: false, message: "The product could not be saved. Check your connection and image details." };
+  }
 }
 
 export async function deleteProductAction(id: string): Promise<ActionResult> {
@@ -94,11 +98,10 @@ export async function saveSiteSettingsAction(input: unknown): Promise<ActionResu
   catch { return { success: false, message: "The settings could not be saved." }; }
 }
 
-export async function sendTestOrderEmailAction(): Promise<ActionResult> {
+export async function sendTestOrderAlertAction(): Promise<ActionResult> {
   await requireAdmin();
-  if (!process.env.RESEND_API_KEY || !process.env.NOTIFY_EMAIL) return { success: false, message: "Add RESEND_API_KEY and NOTIFY_EMAIL to the server environment, then restart the site." };
-  const result = await sendOrderNotification({ id: "test-order", order_number: "RR-TEST", created_at: new Date().toISOString(), customer_name: "Test Customer", phone: "03001234567", address: "Test Street 1", city: "Lahore", notes: "Sample notification", total: 1999, order_items: [{ title: "Sample product", size: "0-3 Months", quantity: 1, unit_price: 1999 }] });
-  return { success: result.sent, message: result.message };
+  const results = await sendOrderNotifications({ id: "test-order", order_number: "RR-TEST", created_at: new Date().toISOString(), customer_name: "Test Customer", phone: "+923001234567", email: null, address: "Test Street 1", city: "Lahore", notes: "Sample notification", total: 1999, order_items: [{ title: "Sample product", size: "0-3 Months", quantity: 1, unit_price: 1999 }] });
+  return { success: results.every((result) => result.sent), message: results.map((result) => result.message).join(" ") };
 }
 
 export async function moderateReviewAction(id: string, status: "approved" | "rejected" | "deleted"): Promise<ActionResult> {
@@ -126,7 +129,8 @@ export async function setOrderStatusAction(id: string, status: string): Promise<
   const statusResult = z.enum(["new", "confirmed", "shipped", "delivered", "cancelled"]).safeParse(status);
   if (!idResult.success || !statusResult.success) return { success: false, message: "Invalid order status." };
   const { error } = await supabase.from("orders").update({ status: statusResult.data }).eq("id", idResult.data);
-  if (error) return { success: false, message: "Could not update the order." };
+  if (error) return { success: false, message: error.code === "P0001" ? "There is not enough stock left to reopen this order." : "Could not update the order." };
+  revalidateTag("products"); // cancelling or reopening an order changes stock
   revalidatePath("/admin"); revalidatePath("/admin/orders");
   return { success: true, message: "Order status updated." };
 }

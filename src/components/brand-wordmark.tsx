@@ -1,7 +1,4 @@
-export function BrandWordmark({ light = false }: { light?: boolean }) {
-  return (
-    <span className={`wordmark${light ? " wordmark-light" : ""}`} aria-label="ragNready">
-      rag<span>N</span>ready
-    </span>
-  );
+/** Text logo. Swap this one component when the final logo is ready. */
+export function BrandWordmark() {
+  return <span className="wordmark" aria-label="ragNready">rag<span>N</span>ready</span>;
 }

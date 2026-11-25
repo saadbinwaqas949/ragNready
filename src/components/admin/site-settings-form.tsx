@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import type { SiteSettings } from "@/lib/data/types";
-import { saveSiteSettingsAction, sendTestOrderEmailAction } from "@/app/admin/actions";
+import { saveSiteSettingsAction, sendTestOrderAlertAction } from "@/app/admin/actions";
 import { SITE_CONTACT_FALLBACKS } from "@/lib/site";
 
 const socialNames = ["Instagram", "Pinterest", "X", "LinkedIn", "Facebook"] as const;
@@ -26,14 +26,14 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings | null }
       social_links, legal_owner_line: String(form.get("legal_owner_line") ?? "") || null,
       announcement_messages: String(form.get("announcement_messages") ?? "").split("\n").map((line) => line.trim()).filter(Boolean),
       hero_headline: String(form.get("hero_headline") ?? ""), hero_subtext: String(form.get("hero_subtext") ?? ""),
-      hero_cta_text: String(form.get("hero_cta_text") ?? ""), popup_discount_code: String(form.get("popup_discount_code") ?? ""), is_published: true,
+      hero_cta_text: String(form.get("hero_cta_text") ?? ""), delivery_fee: Number(form.get("delivery_fee") || 0), free_delivery_over: String(form.get("free_delivery_over") ?? "").trim() ? Number(form.get("free_delivery_over")) : null, is_published: true,
     });
     setNotice(result.message); setFailed(!result.success); setBusy(false);
   }
 
-  async function sendTestEmail() {
+  async function sendTestAlert() {
     setEmailBusy(true); setNotice("");
-    const result = await sendTestOrderEmailAction();
+    const result = await sendTestOrderAlertAction();
     setNotice(result.message); setFailed(!result.success); setEmailBusy(false);
   }
 
@@ -52,7 +52,8 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings | null }
       <label className="admin-field">Hero headline<input className="admin-input" name="hero_headline" defaultValue={settings?.hero_headline ?? "soft beginnings, thoughtfully chosen"} /></label>
       <label className="admin-field">Hero button text<input className="admin-input" name="hero_cta_text" defaultValue={settings?.hero_cta_text ?? "Shop new arrivals"} /></label>
       <label className="admin-field admin-field-full">Hero subtext<textarea className="admin-textarea" name="hero_subtext" defaultValue={settings?.hero_subtext ?? ""} /></label>
-      <label className="admin-field">Popup discount code<input className="admin-input" name="popup_discount_code" defaultValue={settings?.popup_discount_code ?? "CODE20OFF"} /></label>
-    </div><div className="admin-form-actions"><button className="admin-button admin-button-primary" disabled={busy}>{busy ? "Saving…" : "Save site settings"}</button><button className="admin-button" type="button" disabled={emailBusy} onClick={sendTestEmail}>{emailBusy ? "Sending…" : "Send test email"}</button></div></div>
+      <label className="admin-field">Delivery charge (Rs.) <span className="admin-help">Added to every order. 0 means free delivery.</span><input className="admin-input" name="delivery_fee" type="number" min="0" step="1" defaultValue={settings?.delivery_fee ?? 0} /></label>
+      <label className="admin-field">Free delivery from (Rs.) <span className="admin-help">Orders of this amount or more are free. Leave empty to turn off.</span><input className="admin-input" name="free_delivery_over" type="number" min="0" step="1" defaultValue={settings?.free_delivery_over ?? ""} /></label>
+    </div><div className="admin-form-actions"><button className="admin-button admin-button-primary" disabled={busy}>{busy ? "Saving…" : "Save site settings"}</button><button className="admin-button" type="button" disabled={emailBusy} onClick={sendTestAlert}>{emailBusy ? "Sending…" : "Send test order alert"}</button></div></div>
   </form>;
 }

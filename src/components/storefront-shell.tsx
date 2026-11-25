@@ -3,118 +3,123 @@
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { usePathname } from "next/navigation";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { ChevronDown, Heart, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { BrandWordmark } from "@/components/brand-wordmark";
-import type { SiteSettings } from "@/lib/data/types";
-import { useShopStore } from "@/lib/storefront/store";
-import { NewsletterForm } from "@/components/storefront/newsletter-form";
-import { SITE_CONTACT_FALLBACKS } from "@/lib/site";
-import { SIMPLE_MODE } from "@/lib/site-config";
+import { ThemeToggle } from "@/components/storefront/theme-toggle";
+import { cartCount, useShopStore } from "@/lib/storefront/store";
+import { whatsAppLink } from "@/lib/storefront/phone";
 
 const CartDrawer = dynamic(() => import("@/components/storefront/cart-drawer").then((module) => module.CartDrawer), { ssr: false, loading: () => null });
 const SearchOverlay = dynamic(() => import("@/components/storefront/search-overlay").then((module) => module.SearchOverlay), { ssr: false, loading: () => null });
-const CustomCursor = dynamic(() => import("@/components/storefront/custom-cursor").then((module) => module.CustomCursor), { ssr: false, loading: () => null });
 
-function Icon({ name }: { name: "search" | "user" | "heart" | "bag" | "menu" | "close" }) {
-  const paths: Record<typeof name, React.ReactNode> = {
-    search: <><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></>,
-    user: <><circle cx="12" cy="7.5" r="3.5" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0" /></>,
-    heart: <path d="M20.8 8.7c0 5-8.8 11-8.8 11s-8.8-6-8.8-11a4.5 4.5 0 0 1 8.8-1.3 4.5 4.5 0 0 1 8.8 1.3Z" />,
-    bag: <><path d="M5 8h14l1 13H4L5 8Z" /><path d="M9 9V6a3 3 0 0 1 6 0v3" /></>,
-    menu: <><path d="M3 7h18M3 12h18M3 17h18" /></>,
-    close: <><path d="m5 5 14 14M19 5 5 19" /></>,
-  };
-  return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
-}
+type MenuCollection = { title: string; handle: string };
 
 function AnnouncementBar({ messages }: { messages: string[] }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const reduced = useReducedMotion();
   useEffect(() => {
-    if (paused || reduced || messages.length < 2) return;
-    const timer = window.setInterval(() => setActive((current) => (current + 1) % messages.length), 4000);
+    if (paused || messages.length < 2) return;
+    const timer = window.setInterval(() => setActive((current) => (current + 1) % messages.length), 4500);
     return () => window.clearInterval(timer);
-  }, [paused, reduced, messages.length]);
-  return <div className="announcement" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} aria-live="polite"><AnimatePresence mode="wait"><motion.span key={active % messages.length} initial={{ opacity: 0, y: 7 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -7 }} transition={{ duration: 0.26 }}>{messages[active % messages.length]}</motion.span></AnimatePresence></div>;
+  }, [paused, messages.length]);
+  if (!messages.length) return null;
+  return <div className="announcement" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <AnimatePresence mode="wait" initial={false}><motion.span key={active % messages.length} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.28 }}>{messages[active % messages.length]}</motion.span></AnimatePresence>
+  </div>;
 }
 
-export function StorefrontShell({ settings }: { settings: SiteSettings | null }) {
-  const [cartOpen, setCartOpen] = useState(false);
-  const [cartRequested, setCartRequested] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+function CountBadge({ value }: { value: number }) {
+  return <AnimatePresence>{value > 0 && <motion.span key={value} className="count-badge" initial={{ scale: 0.4 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ type: "spring", stiffness: 620, damping: 18 }}>{value}</motion.span>}</AnimatePresence>;
+}
+
+export function StorefrontShell({ announcements, whatsapp, collections }: { announcements: string[]; whatsapp: string; collections: MenuCollection[] }) {
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [showTop, setShowTop] = useState(false);
-  const cartCount = useShopStore((state) => state.cart.reduce((sum, item) => sum + item.quantity, 0));
-  const wishlistCount = useShopStore((state) => state.wishlist.length);
-  const closeSearch = useCallback(() => setSearchOpen(false), []);
-  const openCart = useCallback(() => { setCartRequested(true); setCartOpen(true); }, []);
-  const closeCart = useCallback(() => setCartOpen(false), []);
-  const messages = settings?.announcement_messages?.length ? settings.announcement_messages : ["Soft beginnings, thoughtfully chosen.", "A thoughtfully designed ragNready card is included with selected gift orders.", "New starter set now available."];
+  const cartOpen = useShopStore((state) => state.cartOpen);
+  const setCartOpen = useShopStore((state) => state.setCartOpen);
+  const searchOpen = useShopStore((state) => state.searchOpen);
+  const setSearchOpen = useShopStore((state) => state.setSearchOpen);
+  const count = useShopStore((state) => state.hasHydrated ? cartCount(state.cart) : 0);
+  const wishlistCount = useShopStore((state) => state.hasHydrated ? state.wishlist.length : 0);
+  const signedIn = useShopStore((state) => state.signedIn);
+  // Panels load on first use and stay mounted so their closing animation can play.
+  const [loaded, setLoaded] = useState({ cart: false, search: false });
+  useEffect(() => { if (cartOpen) setLoaded((value) => ({ ...value, cart: true })); }, [cartOpen]);
+  useEffect(() => { if (searchOpen) setLoaded((value) => ({ ...value, search: true })); }, [searchOpen]);
+  const closeCart = useCallback(() => setCartOpen(false), [setCartOpen]);
+  const closeSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
+
+  useEffect(() => { setMenuOpen(false); setCartOpen(false); setSearchOpen(false); }, [pathname, setCartOpen, setSearchOpen]);
 
   useEffect(() => {
-    let previous = window.scrollY;
-    let frame = 0;
+    if (!menuOpen) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = overflow; document.removeEventListener("keydown", onKey); };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    let previous = window.scrollY, frame = 0;
     const onScroll = () => {
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
         const current = window.scrollY;
-        setScrolled(current > 12);
-        setShowTop(current > 500);
-        const shouldHide = current > 120 && current > previous + 2;
-        if (shouldHide) setHidden(true);
-        else if (current < previous - 2 || current < 120) setHidden(false);
+        setScrolled(current > 24);
+        if (current > 180 && current > previous + 4) setHidden(true);
+        else if (current < previous - 4 || current < 180) setHidden(false);
         previous = current;
       });
     };
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => { window.removeEventListener("scroll", onScroll); if (frame) window.cancelAnimationFrame(frame); };
   }, []);
 
-  const whatsappDigits = (settings?.whatsapp_number || SITE_CONTACT_FALLBACKS.whatsapp_number).replace(/\D/g, "");
-  const whatsappNumber = whatsappDigits.startsWith("0") ? `92${whatsappDigits.slice(1)}` : whatsappDigits.startsWith("92") ? whatsappDigits : `92${whatsappDigits}`;
-  const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hi ragNready! I have a question.")}`;
+  const isActive = (href: string) => href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const accountLabel = signedIn ? "Your account" : "Account and order tracking";
+  const mobileLinks: [string, string][] = [["Home", "/"], ["Shop all", "/collections/all"], ...collections.map(({ title, handle }): [string, string] => [title, `/collections/${handle}`]), ["About", "/pages/about-us"], ["Contact", "/pages/contact"]];
+  const bareCheckout = pathname === "/checkout";
 
-  return <>
-    <AnnouncementBar messages={messages} />
-    <header className={`site-header${scrolled ? " is-scrolled" : ""}${hidden ? " is-hidden" : ""}`}>
+  return <MotionConfig reducedMotion="user">
+    <AnnouncementBar messages={announcements} />
+    <header className={`site-header${scrolled ? " is-scrolled" : ""}${hidden && !menuOpen ? " is-hidden" : ""}${menuOpen ? " is-open" : ""}`}>
       <div className="header-inner">
-        <button className="icon-button mobile-menu-toggle" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}><Icon name={menuOpen ? "close" : "menu"} /></button>
+        <button className="icon-button menu-button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
         <nav className="main-nav" aria-label="Main navigation">
-          <Link href="/">Home</Link>
-          {SIMPLE_MODE ? <Link href="/collections/all">Shop</Link> : <div className="nav-dropdown-group"><Link href="/collections/all">Shop</Link><div className="nav-mega"><Link href="/collections/body-suits">Baby Body Suits</Link><Link href="/collections/frocks">Little Occasion Wear</Link><Link href="/collections/rompers">Everyday Rompers</Link><Link href="/collections/caps-accessories">Baby Accessories</Link></div></div>}
-          {!SIMPLE_MODE && <Link href="/collections/gift-set">The ragNready Gift</Link>}<Link href="/pages/about-us">{SIMPLE_MODE ? "About" : "About ragNready"}</Link><Link href="/pages/contact">Contact</Link>
+          <div className="nav-group">
+            <Link className="stitch-link" href="/collections/all" aria-current={isActive("/collections") ? "page" : undefined}>Shop{collections.length > 1 && <ChevronDown aria-hidden="true" />}</Link>
+            {collections.length > 1 && <div className="nav-panel"><Link href="/collections/all">Shop all</Link>{collections.map(({ title, handle }) => <Link href={`/collections/${handle}`} key={handle}>{title}</Link>)}</div>}
+          </div>
+          <Link className="stitch-link" href="/pages/about-us" aria-current={isActive("/pages/about-us") ? "page" : undefined}>About</Link>
+          <Link className="stitch-link" href="/pages/contact" aria-current={isActive("/pages/contact") ? "page" : undefined}>Contact</Link>
         </nav>
-        <Link href="/" aria-label="ragNready home"><BrandWordmark /></Link>
+        <Link href="/" className="header-logo" aria-label="ragNready home"><BrandWordmark /></Link>
         <div className="header-actions">
-          {!SIMPLE_MODE && <><button className="icon-button" aria-label="Search" onClick={() => setSearchOpen(true)}><Icon name="search" /></button><Link className="icon-button account-action" href="/admin" aria-label="Shop admin"><Icon name="user" /></Link><Link className="icon-button wishlist-action" href="/pages/wishlist" aria-label={`Wishlist, ${wishlistCount} saved items`}><Icon name="heart" />{wishlistCount > 0 && <span className="cart-count wishlist-count">{wishlistCount}</span>}</Link></>}
-          <button className="icon-button" id="cart-trigger" aria-label={`Open cart, ${cartCount} items`} onClick={openCart}><Icon name="bag" /><AnimatePresence mode="popLayout"><motion.span className="cart-count" key={cartCount} initial={{ scale: 0.65 }} animate={{ scale: [1.22, 1] }} exit={{ scale: 0.65 }} transition={{ duration: 0.28 }}>{cartCount}</motion.span></AnimatePresence></button>
+          <span className="desktop-only"><ThemeToggle /></span>
+          <button className="icon-button desktop-only" aria-label="Search" onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></button>
+          <Link className="icon-button desktop-only" href="/account" aria-label={accountLabel} title={accountLabel}><UserRound aria-hidden="true" />{signedIn && <span className="signed-in-dot" />}</Link>
+          <Link className="icon-button" href="/pages/wishlist" aria-label={`Wishlist, ${wishlistCount} saved`}><Heart aria-hidden="true" /><CountBadge value={wishlistCount} /></Link>
+          <button className="icon-button" id="cart-trigger" aria-label={`Open cart, ${count} items`} onClick={() => setCartOpen(true)}><motion.span key={count} className="bag-wiggle" initial={count ? { rotate: 0 } : false} animate={count ? { rotate: [0, -14, 11, -6, 0] } : undefined} transition={{ duration: 0.5 }}><ShoppingBag aria-hidden="true" /></motion.span><CountBadge value={count} /></button>
         </div>
       </div>
-      <AnimatePresence>{menuOpen && <motion.nav id="mobile-navigation" className="mobile-nav" aria-label="Mobile navigation" initial={{ height: 0, opacity: 0 }} animate={{ height: "calc(100svh - 104px)", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
-        {(SIMPLE_MODE ? [["Home", "/"], ["Shop", "/collections/all"], ["About", "/pages/about-us"], ["Contact", "/pages/contact"]] : [["Shop all", "/collections/all"], ["Baby Body Suits", "/collections/body-suits"], ["Little Occasion Wear", "/collections/frocks"], ["Gift sets", "/collections/gift-set"], ["About ragNready", "/pages/about-us"], ["Contact", "/pages/contact"]]).map(([label, href], index) => <motion.div key={href} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.045 }}><Link href={href} onClick={() => setMenuOpen(false)}>{label}</Link></motion.div>)}
-      </motion.nav>}</AnimatePresence>
+      <AnimatePresence>{menuOpen && <motion.div id="mobile-navigation" className="mobile-nav" initial={{ opacity: 0, clipPath: "inset(0 0 100% 0)" }} animate={{ opacity: 1, clipPath: "inset(0 0 0% 0)" }} exit={{ opacity: 0, clipPath: "inset(0 0 100% 0)" }} transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}>
+        <nav aria-label="Mobile navigation">{mobileLinks.map(([label, href], index) => <motion.div key={href} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 + index * 0.04, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}><Link href={href} onClick={() => setMenuOpen(false)} aria-current={pathname === href ? "page" : undefined}>{label}</Link></motion.div>)}</nav>
+        <div className="mobile-nav-tools">
+          <button type="button" onClick={() => { setMenuOpen(false); setSearchOpen(true); }}><Search aria-hidden="true" />Search</button>
+          <Link href="/account" onClick={() => setMenuOpen(false)}><UserRound aria-hidden="true" />{signedIn ? "Your account" : "Account"}</Link>
+          <ThemeToggle withLabel />
+        </div>
+      </motion.div>}</AnimatePresence>
     </header>
-    {cartRequested && <CartDrawer open={cartOpen} onClose={closeCart} />}
-    {!SIMPLE_MODE && <SearchOverlay open={searchOpen} onClose={closeSearch} />}
-    <a className="whatsapp" href={whatsappHref} aria-label="Chat with ragNready on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.7 7.4L3 20l1-4.5a8.5 8.5 0 1 1 16.5-3.8Z" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M8.1 8.1c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .5.4l.7 1.6c.1.3.1.4-.1.6l-.5.6c-.2.2-.2.3 0 .6.4.7 1.1 1.3 1.8 1.7.3.2.5.2.7-.1l.7-.8c.2-.2.4-.2.6-.1l1.5.7c.3.1.4.3.3.6-.1.5-.4 1.1-.8 1.3-.5.4-1.1.5-1.8.3-.6-.2-1.3-.4-2.3-1.1-1.3-.9-2.2-2-2.7-2.8-.5-.9-.8-1.9-.3-2.8.2-.4.5-.7.8-.8Z" fill="currentColor"/></svg></a>
-    {showTop && <button className="back-to-top" aria-label="Back to top" onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}>↑</button>}
-    {!SIMPLE_MODE && <CustomCursor />}
-  </>;
-}
-
-export function SiteFooter({ settings }: { settings: SiteSettings | null }) {
-  const email = settings?.email ?? SITE_CONTACT_FALLBACKS.email;
-  const phone = settings?.phone ?? SITE_CONTACT_FALLBACKS.phone;
-  const address = settings?.address ?? "Lahore, Pakistan";
-  const socialLinks = Object.entries(settings?.social_links ?? {}).filter(([, url]) => url);
-  return <footer className="site-footer"><div className="footer-grid">
-    <div className="footer-brand"><Link href="/" aria-label="ragNready home"><BrandWordmark light /></Link><p className="footer-blurb">Soft, breathable clothing for newborn to 12 months. Thoughtfully chosen for life&apos;s littlest moments.</p><div className="footer-contact"><a href={`mailto:${email}`}>{email}</a><a href={`tel:${phone.replace(/\s/g, "")}`}>{phone}</a><span>{address}</span></div>{socialLinks.length > 0 && <div className="footer-socials" aria-label="Social media">{socialLinks.map(([name, url]) => <a href={url} key={name} target="_blank" rel="noreferrer">{name}</a>)}</div>}</div>
-    <div><h2 className="footer-title">Shop</h2><div className="footer-links"><Link href="/collections/all">Shop all</Link><Link href="/collections/body-suits">Baby Body Suits</Link><Link href="/collections/frocks">Little Occasion Wear</Link><Link href="/collections/rompers">Everyday Rompers</Link><Link href="/collections/gift-set">Gift sets</Link><Link href="/collections/caps-accessories">Baby Accessories</Link></div></div>
-    <div><h2 className="footer-title">Support</h2><div className="footer-links"><Link href="/pages/shipping-returns">Shipping &amp; Returns</Link><Link href="/pages/refund-policy">Refund Policy</Link><Link href="/pages/privacy-policy">Privacy Policy</Link><Link href="/pages/terms-and-conditions">Terms &amp; Conditions</Link><Link href="/pages/size-guide">Size Guide</Link><Link href="/pages/faq">FAQ</Link><Link href="/pages/contact">Contact</Link></div></div>
-    {!SIMPLE_MODE && <div className="footer-newsletter"><h2 className="footer-title">A little note from us</h2><p className="footer-blurb">Join the ragNready family for thoughtful updates and little surprises.</p><NewsletterForm compact /></div>}
-  </div><div className="footer-bottom">{settings?.legal_owner_line ? `${settings.legal_owner_line} ` : ""}© {new Date().getFullYear()} ragNready. All rights reserved.</div></footer>;
+    {loaded.cart && <CartDrawer open={cartOpen} onClose={closeCart} />}
+    {loaded.search && <SearchOverlay open={searchOpen} onClose={closeSearch} />}
+    {!bareCheckout && <a className="whatsapp" href={whatsAppLink(whatsapp, "Hi ragNready! I have a question.")} target="_blank" rel="noreferrer" aria-label="Chat with ragNready on WhatsApp"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 4.5A11.4 11.4 0 0 0 6.2 21.7L4.6 27.4l5.9-1.5A11.4 11.4 0 1 0 16 4.5Zm0 2.1a9.3 9.3 0 1 1-4.9 17.2l-.4-.2-3.2.8.9-3.1-.3-.4A9.3 9.3 0 0 1 16 6.6Zm-4 4.3c-.2 0-.6.1-.9.4-.3.4-1.1 1.1-1.1 2.6 0 1.6 1.1 3.1 1.3 3.3.2.2 2.2 3.5 5.5 4.8 2.7 1 3.3.8 3.9.8.6-.1 1.9-.8 2.2-1.5.3-.8.3-1.4.2-1.5-.1-.2-.3-.3-.6-.4l-2.2-1c-.3-.1-.5-.2-.8.2l-1 1.2c-.2.2-.3.2-.7.1-.3-.2-1.3-.5-2.5-1.6-.9-.8-1.6-1.8-1.7-2.2-.2-.3 0-.5.1-.6l.5-.6.4-.5v-.6l-1-2.4c-.3-.6-.5-.5-.7-.5H12Z" /></svg></a>}
+  </MotionConfig>;
 }

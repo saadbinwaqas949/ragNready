@@ -1,3 +1,3 @@
 export default function CollectionLoading() {
-  return <main className="section collection-skeleton" aria-label="Loading products"><div className="skeleton-heading" /><div className="skeleton-grid">{Array.from({ length: 8 }, (_, index) => <div className="skeleton-card" key={index}><span /><i /><i /></div>)}</div></main>;
+  return <main className="section page-full" aria-label="Loading products" aria-busy="true"><div className="skeleton skeleton-title" /><div className="product-grid" data-count="4">{Array.from({ length: 4 }, (_, index) => <div key={index}><div className="skeleton skeleton-media" /><div className="skeleton skeleton-line" /></div>)}</div></main>;
 }

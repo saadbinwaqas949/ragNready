@@ -1,3 +1,5 @@
+.admin-root, .admin-login-screen { --ink: #24364b; --ink-soft: #5e6f83; --surface: #fff; --ground: #fff; --accent: #286d96; color: #24364b; color-scheme: light; }
+.admin-root h1, .admin-root h2, .admin-root h3, .admin-login-screen h1 { font-family: inherit; font-weight: 700; }
 .admin-root { min-height: 100vh; background: #f6f7f9; color: #24364b; font-family: Arial, Helvetica, sans-serif; }
 .admin-layout { display: grid; min-height: 100vh; grid-template-columns: 240px minmax(0, 1fr); }
 .admin-sidebar { position: sticky; top: 0; display: flex; height: 100vh; flex-direction: column; border-right: 1px solid #e4e8ed; padding: 26px 16px; background: #fff; }

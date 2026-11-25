@@ -1,15 +1,22 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useShopStore } from "@/lib/storefront/store";
-import { formatPrice } from "@/lib/storefront/format";
+import { MotionConfig } from "framer-motion";
+import { deliveryFee, formatPrice } from "@/lib/storefront/format";
+import { cartSubtotal, useShopStore } from "@/lib/storefront/store";
+import { useCartCheck } from "@/hooks/use-cart-check";
+import { CartLines } from "./cart-lines";
 
 export function CartPage() {
   const cart = useShopStore((state) => state.cart);
-  const setQuantity = useShopStore((state) => state.setQuantity);
-  const remove = useShopStore((state) => state.removeFromCart);
-  const subtotal = cart.reduce((sum, line) => sum + line.price * line.quantity, 0);
-  if (!cart.length) return <main className="section cart-page"><p className="eyebrow center-eyebrow">a little room for something lovely</p><h1 className="section-heading">Your cart</h1><div className="store-empty"><p>Your cart is empty.</p><Link className="button-primary" href="/collections/all">Continue shopping</Link></div></main>;
-  return <main className="section cart-page"><p className="eyebrow">your thoughtful picks</p><h1 className="section-heading section-heading-left">Your cart</h1><div className="full-cart-layout"><div className="full-cart-lines">{cart.map((line) => <article className="full-cart-line" key={line.key}><Link href={`/products/${line.handle}`}><Image src={line.image} alt="" width={120} height={145} quality={75} /></Link><div><Link href={`/products/${line.handle}`}>{line.title}</Link>{line.size && <p>Size: {line.size}</p>}<div className="quantity-control"><button onClick={() => setQuantity(line.key, line.quantity - 1)} aria-label="Decrease quantity">−</button><span>{line.quantity}</span><button onClick={() => setQuantity(line.key, line.quantity + 1)} aria-label="Increase quantity">+</button></div><button className="cart-remove" onClick={() => remove(line.key)}>Remove</button></div><strong>{formatPrice(line.price * line.quantity)}</strong></article>)}</div><aside className="full-cart-summary"><h2>Order summary</h2><p><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></p><small>Shipping and payment are confirmed at checkout.</small><Link className="button-primary" href="/checkout">Checkout</Link><Link className="continue-link" href="/collections/all">Continue shopping</Link></aside></div></main>;
+  const hasHydrated = useShopStore((state) => state.hasHydrated);
+  const delivery = useShopStore((state) => state.delivery);
+  useCartCheck(true);
+  const subtotal = cartSubtotal(cart);
+  const fee = delivery ? deliveryFee(subtotal, delivery) : null;
+  if (!hasHydrated) return <main className="section page-narrow" aria-busy="true"><h1 className="page-title">Your cart</h1><div className="skeleton skeleton-block" /></main>;
+  if (!cart.length) return <main className="section page-narrow"><h1 className="page-title">Your cart</h1><div className="empty-state"><p>Your cart is empty.</p><Link className="button button-primary" href="/collections/all">Continue shopping</Link></div></main>;
+  return <MotionConfig reducedMotion="user"><main className="section page-wide"><h1 className="page-title">Your cart</h1><div className="split-layout"><CartLines />
+    <aside className="summary-card"><h2>Summary</h2><p className="total-row"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></p><p className="total-row"><span>Delivery</span><span>{fee === null ? "At checkout" : fee === 0 ? "Free" : formatPrice(fee)}</span></p><p className="total-row total-row-grand"><span>Total</span><strong>{formatPrice(subtotal + (fee ?? 0))}</strong></p><Link className="button button-primary" href="/checkout">Checkout</Link><p className="fine-print">Cash on delivery. You pay when your parcel arrives.</p></aside>
+  </div></main></MotionConfig>;
 }

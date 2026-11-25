@@ -1,17 +1,17 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { Collection, Product } from "@/lib/data/types";
-import { CollectionControls } from "./collection-controls";
+import { SORTS } from "@/lib/storefront/filters";
+import { CollectionToolbar } from "./collection-toolbar";
 import { ProductGrid } from "./product-grid";
-import { SIMPLE_MODE } from "@/lib/site-config";
 
-export function CollectionPage({ collection, products, values, basePath }: { collection?: Collection; products: Product[]; values: Record<string, string | undefined>; basePath: string }) {
-  const image = collection?.image;
-  if (SIMPLE_MODE) return <main className="collection-page"><ProductGrid products={products} /></main>;
-  return <main className="collection-page">
-    <nav className="breadcrumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span><Link href="/collections/all">Shop</Link>{collection && <><span>/</span><span aria-current="page">{collection.title}</span></>}</nav>
-    {collection && <section className="collection-hero"><div><p className="eyebrow">thoughtfully chosen</p><h1>{collection.title}</h1><p>{collection.description}</p></div>{image && <div className="collection-hero-image"><Image src={image} alt="" fill quality={75} sizes="40vw" /></div>}</section>}
-    {!collection && <header className="collection-title"><p className="eyebrow">soft beginnings, thoughtfully chosen</p><h1>Shop all</h1><p>Thoughtful essentials and meaningful gifts for little ones.</p></header>}
-    <div className="collection-layout"><aside className="collection-sidebar"><CollectionControls basePath={basePath} values={values} /></aside><div className="collection-results"><div className="collection-results-bar"><span>{products.length} {products.length === 1 ? "piece" : "pieces"}</span><span>{values.size || values.gender || values.season || values.availability ? "Filters applied" : "Thoughtfully selected"}</span></div><ProductGrid products={products} view={values.view === "list" ? "list" : "grid"} /></div></div>
+type Props = { collection?: Collection; products: Product[]; allProducts: Product[]; basePath: string; current: Record<string, string | undefined> };
+
+export function CollectionPage({ collection, products, allProducts, basePath, current }: Props) {
+  const sizes = [...new Set(allProducts.flatMap((product) => product.variants.filter((variant) => variant.stock > 0).map((variant) => variant.size)))].sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  const genders = [...new Set(allProducts.map((product) => product.gender))];
+  return <main className="section page-full">
+    <header className="collection-head"><h1 className="page-title">{collection?.title ?? "Shop all"}</h1><p className="page-intro">{collection?.description || "Everything in the shop, from first bodysuits to gift sets."}</p></header>
+    {allProducts.length > 1 && <CollectionToolbar basePath={basePath} current={current} sizes={sizes} genders={genders} sorts={SORTS} />}
+    {products.length ? <ProductGrid products={products} priority /> : <div className="empty-state"><p>{allProducts.length ? "Nothing matches those filters right now." : "New pieces for this collection are on the way."}</p><Link className="button button-primary" href={allProducts.length ? basePath : "/collections/all"}>{allProducts.length ? "Clear filters" : "Shop all"}</Link></div>}
   </main>;
 }

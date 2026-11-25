@@ -1,3 +1,12 @@
+/** Rs.1,999 for whole amounts, Rs.1,999.50 otherwise. */
 export function formatPrice(amount: number) {
-  return `Rs.${Number(amount).toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const value = Number(amount);
+  const digits = Number.isInteger(value) ? 0 : 2;
+  return `Rs.${value.toLocaleString("en-PK", { minimumFractionDigits: digits, maximumFractionDigits: 2 })}`;
+}
+
+export type DeliveryRates = { fee: number; freeOver: number | null };
+
+export function deliveryFee(subtotal: number, rates: DeliveryRates) {
+  return rates.freeOver !== null && subtotal >= rates.freeOver ? 0 : rates.fee;
 }

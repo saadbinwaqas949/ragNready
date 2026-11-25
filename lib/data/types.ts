@@ -54,7 +54,8 @@ export type SiteSettings = {
   hero_headline: string;
   hero_subtext: string;
   hero_cta_text: string;
-  popup_discount_code: string;
+  delivery_fee?: number;
+  free_delivery_over?: number | null;
   is_published: boolean;
   updated_at: string;
 };

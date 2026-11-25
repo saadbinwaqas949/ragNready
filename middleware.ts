@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (request.nextUrl.pathname === "/admin/login") return NextResponse.next();
+    if (request.nextUrl.pathname === "/admin/login" || !request.nextUrl.pathname.startsWith("/admin")) return NextResponse.next();
     return NextResponse.redirect(new URL("/admin/login?setup=required", request.url));
   }
 
@@ -29,11 +29,12 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   let isAdmin = false;
-  if (user) {
+  if (user && request.nextUrl.pathname.startsWith("/admin")) {
     const result = await supabase.rpc("is_admin");
     isAdmin = result.data === true && !result.error;
   }
 
+  if (!request.nextUrl.pathname.startsWith("/admin")) return response;
   const isLogin = request.nextUrl.pathname === "/admin/login";
   if (isLogin) {
     if (isAdmin) return redirectWithCookies(new URL("/admin/products", request.url), response);
@@ -49,4 +50,4 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/admin/:path*"] };
+export const config = { matcher: ["/admin/:path*", "/account/:path*", "/checkout"] };
